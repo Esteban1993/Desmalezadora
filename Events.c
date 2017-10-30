@@ -49,19 +49,6 @@ extern "C" {
 /*
  * ######################## VARIABLES GLOBALES ###############################
  */
-// INPUT CAPTURE
-extern uint16_t Data[4][2];					//Contador de pulsos de cada flanco [1xMOTOR 2xVariableAnteriorYActual] 
-extern word Period[4];						//Diferencia entre los pulsos 2 y 1 de cada MOTOR
-extern byte index[4];						//Indice de pulsos
-extern byte err[4];							//Por si ocurre un error al momento de leer pulsos
-
-extern word cuenta_vel_cero[4];				//Contador para determinar Vel CERO si no se registran nuevos flancos
-extern dlong posicion_pulsos[4];			//Contador de Flancos del Motor
-
-extern uint16_t Data_Receptor[2][2];		//IDEM A ANTERIOR SOLO QUE PARA MEDIR ANCHO DE PULSO DE REMOTO
-extern dword Period_Receptor[2];				//IDEM A ANTERIOR SOLO QUE PARA MEDIR ANCHO DE PULSO DE REMOTO
-extern byte index_Receptor[2];				//IDEM A ANTERIOR SOLO QUE PARA MEDIR ANCHO DE PULSO DE REMOTO
-extern byte err_Receptor[2];				//IDEM A ANTERIOR SOLO QUE PARA MEDIR ANCHO DE PULSO DE REMOTO
 
 //ENVIAR Y RECIBIR
 extern byte tx_buf[BUF_SIZE];            	// TX buffer
@@ -90,9 +77,6 @@ extern byte FLAG_ADC;						//FLAG de ADC TERMINO
 extern byte FLAG_RX;						//Hay datos para procesar RECIBIDOS
 extern byte FLAG_TX;						//Hay datos para procesar ENVIAR
 
-// DIRECCION PWM
-extern byte pwm_direccion;					//Define el DUTY CICLE del PWM de la direccion
-extern word pwm_pasos;						//Cantidad de PASOS que se ha dado
 
 // NUEVO
 extern MOTOR motor_di;

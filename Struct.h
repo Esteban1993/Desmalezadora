@@ -22,6 +22,9 @@ typedef struct motor {
 	int32 error_RPM;				//Entrada al PID [SETPOINT - LECTURA]
 	
 	uint16 control;					//Salida del PID
+	uint8 k;
+	uint8 td;
+	uint8 ti;
 	uint16 tension;					//Salida del PID para la FUNCION Tension_PWM
 	uint16 duty;					//Duty aplicado a los PWM de cada MOTOR
 	uint16 duty_entrada;			//Lectura DUTY en ESTADO LA_VELOCIDAD
@@ -37,12 +40,11 @@ typedef struct pap {
 	uint8 FLAG_EN;					//PASO A PASO ENEABLE
 	uint8 FLAG_SENTIDO;				//PASO A PASO SENTIDO DE GIRO
 	uint8 FLAG_DIRECCION;			//FLAG usado para definir cuando hay una señal de direccion
-	
 } PAP;
 
 typedef struct remoto {
 	INPUT_CAPTURE Input;
-	byte FLAG_TIEMPO;				//FLAG de VELOCIDAD LEIDA
+	uint8 FLAG_TIEMPO;				//FLAG de VELOCIDAD LEIDA
 	uint16 remoto_cero;				//Ancho del pulso en CERO
 	uint16 cuenta_remoto;			//Cuenta las veces para definir ancho de CALIBRACION
 	uint16 ms;						//Ancho del pulso del receptor REMOTO
@@ -59,3 +61,7 @@ typedef struct serie {
 	uint8 FLAG_RX;						//Hay datos para procesar RECIBIDOS
 	uint8 FLAG_TX;						//Hay datos para procesar ENVIAR
 } SERIE;
+
+typedef struct pc {
+	uint16 rpm_global;            	// RPM de Entrada PC
+} PC;

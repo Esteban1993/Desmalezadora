@@ -26,8 +26,6 @@
 */         
 /* MODULE main */
 
-//JIMMY A PUESTO UN CAPACITOR AQUI -||-
-//JIMMY A PUESTO UN CAPACITOR AQUI -||-
 /* Including needed modules to compile this module/procedure */
 #include "Cpu.h"
 #include "Events.h"
@@ -143,19 +141,6 @@ void DECODIFICADO(byte* codigo, byte inicio);	//Decodifica el mensaje recibido y
 /*
  * ######################## VARIABLES GLOBALES ###############################
  */
-// INPUT CAPTURE
-uint16_t Data[4][2];				//Contador de pulsos de cada flanco [1xMOTOR 2xVariableAnteriorYActual] 
-word Period[4];						//Diferencia entre los pulsos 2 y 1 de cada MOTOR
-byte index[4];						//Indice de pulsos
-byte err[4];						//Por si ocurre un error al momento de leer pulsos
-
-word cuenta_vel_cero[4];			//Contador para determinar Vel CERO si no se registran nuevos flancos
-dlong posicion_pulsos[4];			//Contador de Flancos del Motor
-
-uint16_t Data_Receptor[2][2];		//IDEM A ANTERIOR SOLO QUE PARA MEDIR ANCHO DE PULSO DE REMOTO
-dword Period_Receptor[2];			//IDEM A ANTERIOR SOLO QUE PARA MEDIR ANCHO DE PULSO DE REMOTO
-byte index_Receptor[2];				//IDEM A ANTERIOR SOLO QUE PARA MEDIR ANCHO DE PULSO DE REMOTO
-byte err_Receptor[2];				//IDEM A ANTERIOR SOLO QUE PARA MEDIR ANCHO DE PULSO DE REMOTO
 
 //ENVIAR Y RECIBIR
 byte tx_buf[BUF_SIZE];            	// TX buffer
@@ -187,47 +172,21 @@ byte FLAG_TX;						//Hay datos para procesar ENVIAR
 byte pwm_direccion;					//Contador para el PWM Manual
 word pwm_pasos;						//Cantidad de PASOS que se ha dado
 
-// REMOTO
-word perdida_senal_remoto[2];		//Contador para detectar perdida de señal en modo REMOTO o CALIBRACION
-word remoto_cero[2];				//Ancho del pulso en CALIBRACION
-
-
 
 // ######################## VARIABLES INTERNAS ###############################
 
 bool lectura_nueva;				//Cuando se cambia de estado, sirve para ejecutar 
 								//	una porcion de codigo por unica vez
 
-word remoto_vel_cero;			//Ancho del pulso en CERO
-word remoto_dir_cero;			//Ancho del pulso en CERO
-word cuenta_remoto_vel;			//Cuenta las veces para definir ancho de CALIBRACION
-word cuenta_remoto_dir;			//Cuenta las veces para definir ancho de CALIBRACION
-word receptor_ms[2];			//Ancho del pulso del receptor REMOTO 		[VELOCIDAD POSICION]
+word RPM_SET;					//Setpoint RPM Global
 bool sentido_ant;				//Sentido anterior de GIRO MOTOR 			1-REVERSA
 bool sentido_act;				//Sentido actual que se desea GIRAR MOTOR 	1-REVERSA
 byte sentido_entrada;			//Sentido de GIRO MOTOR desde la PC 		1-REVERSA
-word rpm_entrada;				//Lectura SETPOINT RPM desde la PC
-word duty_entrada[4];			//Lectura DUTY en ESTADO LA_VELOCIDAD
 
-word adc[4];					//Valores de los ADC de cada MOTOR
-word *adc_value[4];				//Puntero de los valores de los ADC
-
-word encoder_ms[4];				//Velocidad en ms del encoder 				[4 MOTORES]
-word RPM_SET;					//SETPOINT DE RPM GLOBAL					VER SI HACER 4 SETPOINT?
-signed long error_RPM[4];		//Entrada al PID [SETPOINT - LECTURA]
-word rpm[4];					//Lectura RPM
-
-word Var_Control[4];			//Salida del PID
-word *Control[4];				//Puntero de las salidas del PID
-word Var_Tension[4];			//Salida del PID para la FUNCION Tension_PWM
-word duty[4];					//Duty aplicado a los PWM de cada MOTOR
-
-word pasos_direccion;			//Pasos que se desean - PASO A PASO
 word rpm_max_control;			//Setea el MAXIMO de RPM que se puede aplicar en MODO REMOTO LC
-word tension_max_control = U_MAX;			//Setea el MAXIMO de DUTY que se puede aplicar en MODO REMOTO LA
+word tension_max_control = U_MAX;	//Setea el MAXIMO de DUTY que se puede aplicar en MODO REMOTO LA
 
-byte lectura_direccion;			//Lee la posicion del PASO a PASO
-word direccion_set = 196;				//SETPOINT de direcion
+word direccion_set = 196;		//SETPOINT de direcion
 
 byte FLAG_PASOS;				//FLAG usada en el ESTADO PASOS
 byte FLAG_DIRECCION = false;	//FLAG usado para definir cuando hay una señal de direccion
@@ -243,6 +202,8 @@ REMOTO direccion;
 REMOTO velocidad;
 
 PAP pap;
+
+PC pc;
 
 /*lint -save  -e970 Disable MISRA rule (6.3) checking. */
 
@@ -265,14 +226,23 @@ int main(void)
   //################ INICIALIZAR VARIABLES
   ResetVar();
   //PID
-  CtrlPID_DD_Set_K((float)K_PID);
-  CtrlPID_DD_Set_Ti((float)TI_PID);
-  CtrlPID_DI_Set_K((float)K_PID);
-  CtrlPID_DI_Set_Ti((float)TI_PID);
-  CtrlPID_TD_Set_K((float)K_PID);
-  CtrlPID_TD_Set_Ti((float)TI_PID);
-  CtrlPID_TI_Set_K((float)K_PID);
-  CtrlPID_TI_Set_Ti((float)TI_PID);
+  motor_dd.k = K_PID;
+  motor_di.k = K_PID;
+  motor_ti.k = K_PID;
+  motor_td.k = K_PID;
+  motor_dd.ti = TI_PID;
+  motor_di.ti = TI_PID;
+  motor_ti.ti = TI_PID;
+  motor_td.ti = TI_PID;
+  
+  CtrlPID_DD_Set_K((float)motor_dd.k);
+  CtrlPID_DD_Set_Ti((float)motor_dd.ti);
+  CtrlPID_DI_Set_K((float)motor_di.k);
+  CtrlPID_DI_Set_Ti((float)motor_di.ti);
+  CtrlPID_TD_Set_K((float)motor_td.k);
+  CtrlPID_TD_Set_Ti((float)motor_td.ti);
+  CtrlPID_TI_Set_K((float)motor_ti.k);
+  CtrlPID_TI_Set_Ti((float)motor_ti.ti);
   //
   //#######################################
   ADC_I_Calibrate(TRUE);
@@ -441,7 +411,7 @@ int main(void)
 			  Reset_PIDs();
 			  lectura_nueva = false;
 		  }
-		  RPM_SET = rpm_entrada; //HACER
+		  RPM_SET = pc.rpm_global; //HACER
 		  
 		  if (RPM_SET <= SET_RPM_MIN){
 			  RPM_SET = SET_RPM_MIN;
@@ -495,12 +465,12 @@ int main(void)
 				  velocidad.cuenta_remoto = 0;
 			  }
 			  if (direccion.ms == direccion.remoto_cero){
-				  cuenta_remoto_dir++;
+				  direccion.cuenta_remoto++;
 			  } else {
 				  direccion.remoto_cero = direccion.ms;
-				  cuenta_remoto_dir = 0;
+				  direccion.cuenta_remoto = 0;
 			  }		  
-			  if (cuenta_remoto_vel >= CUENTAS_REMOTO && cuenta_remoto_dir >= CUENTAS_REMOTO){
+			  if (velocidad.cuenta_remoto >= CUENTAS_REMOTO && direccion.cuenta_remoto >= CUENTAS_REMOTO){
 				  ESTADO = LC_REMOTO;
 				  lectura_nueva = true;
 			  }
@@ -514,15 +484,15 @@ int main(void)
 		  
 	  case PASOS:
 		  if (FLAG_PASOS){
-			  if (pasos_direccion != 0){
-				  FLAG_DIRECCION_PWM_EN = true;
+			  if (pap.pasos_adar != 0){
+				  pap.FLAG_DIRECCION = true;
 				  DIRECCION_ON;
-				  if (pwm_pasos == pasos_direccion){
-					  FLAG_DIRECCION_PWM_EN = false;
+				  if (pap.pasos_dados == pap.pasos_adar){
+					  pap.FLAG_DIRECCION = false;
 					  FLAG_PASOS = false;
-					  pasos_direccion = 0;
-					  pwm_direccion = 0;
-					  pwm_pasos = 0;
+					  pap.pasos_adar = 0;
+					  pap.pwm_direccion = 0;
+					  pap.pasos_dados = 0;
 					  DIRECCION_OFF;
 				  }
 			  }
@@ -531,6 +501,7 @@ int main(void)
 		  
 	  case PERDIDA_SENAL:
 		  ESTADO = CALIBRACION;
+		  Reset_PIDs();
 		  motor_di.tension = 0;
 		  motor_dd.tension = 0;
 		  motor_ti.tension = 0;
@@ -580,8 +551,8 @@ int main(void)
 	  }
 	  //######## END DIRECCION
 	  
-	  RX();
-	  TX();
+	  //RX();
+	  //TX();
 	  if (cuenta_RECIBIR >= 500){
 		  cuenta_RECIBIR = 0;
 		  //FLAG_TX = true;		  
@@ -890,7 +861,7 @@ void DECODIFICADO(byte* codigo, byte inicio){
 				lc_pc_rpm = *pcodigo++;
 				VALIDAR = (*pcodigo++ == ':') ? TRUE : FALSE;
 				if (VALIDAR){
-					rpm_entrada = lc_pc_rpm;
+					pc.rpm_global = lc_pc_rpm;
 					ESTADO = LC_PC;				
 				}
 				break;
@@ -936,74 +907,5 @@ word GrayToBin(word N){
 	return N;
 }
 void ResetVar (void){
-	byte i;
-	byte x;
-	//#### Variables
-	for (i=0;i<=1;i++){
-	  receptor_ms[i] = 0;
-	}
-	for (i=0;i<=3;i++){
-	  encoder_ms[i] = 0;
-	  adc[i]=0;
-	  adc_value[i] = &adc[i];
-	  error_RPM[i]=0;
-	  rpm[i]=0;
-	  Var_Control[i] = 0;
-	  Control[i] = &Var_Control[i];
-	  duty[i] = 65534;
-	  Var_Tension[i] = 0;
-	  duty_entrada[i] = 65535;
-	}
-	//REMOTO
-	velocidad.ms = 0;
-	direccion.ms = 0;
-	//
-	lectura_nueva = false;
-	rpm_max_control = 0;
-	sentido_entrada = ADELANTE;
-	sentido_ant = ADELANTE;
-	sentido_act = ADELANTE;
-	rpm_entrada = 0;
-	pasos_direccion = 0;
-	Out_Reversa_PutVal(sentido_act);
-	ESTADO = 25;
-	
-	FLAG_RX = 0;
-	FLAG_TX = 0;
-	FLAG_PASOS = 0;
-	RPM_SET = 0;
-	lectura_direccion = 0;
-	cnt_aux = 0;
-	cuenta_RX = 0;
-	pwm_direccion = 0;
-	pwm_pasos = 0;
-	
-	for (i=0;i<=1;i++){
-		//##### InputCapture
-		for (x=0;x<=1;x++){
-			Data_Receptor[i][x] = 0;
-		}
-		Period_Receptor[i] = 0;
-		index_Receptor[i] = 0;
-		err_Receptor[i] = 0;
-		FLAG_RECEPTOR[i]= 0;
-	}
-	for (i=0;i<=3;i++){
-		//##### InputCapture
-		for (x=0;x<=1;x++){
-			Data[i][x] = 0;
-		}
-		Period[i] = 0;
-		index[i] = 0;
-		err[i] = 0;
-		FLAG_TIEMPO[i] = 0;
-		cuenta_vel_cero[i] = 0;
-		posicion_pulsos[i] = 0;
-	}
-	//##### FLAGS
-	FLAG_DIRECCION_PWM_EN = 0;
-	FLAG_DIRECCION_SENTIDO = 0;
-	FLAG_ADC = 0;
-	FLAG_SW1 = false;
-	FLAG_SW2 = false;
+
 }
