@@ -111,31 +111,11 @@
 #include "Init_Config.h"
 #include "Struct.h"
 #include "Defines.h"
+#include "Funciones.h"
 
 
-/*
- * ######################## DECLARAR FUNCIONES ###############################
- */
-long Mapeo(long x, long in_min, long in_max, long out_min, long out_max);	//Mapear valores
-void ResetVar (void);				//Reset de las variables globales
-void Get_Remoto (void);				//Recibi ancho de los pulsos de REMOTO
-void Get_Velocidad (void);			//Recibe ancho de los pulsos del SENSOR HALL
-void Get_Corriente (void);			//Lee los ADC de CORRIENTE
-void Send_Velocidad(void); 			//Envia Velocidad
-void Send_Corriente(void);			//Envia Corriente
-void Send_RPM(void);				//Envia RPM
-void Send_Calibrado(void);			//Envia Calibracion
-void Control_LC(void);				//PID LC
-void Send_Calibrado(void);			//Envia Calibracion
-void Tension_PWM(void);				//Aplica la tension a los PWM
-void RPM_Cero(void);				//Verifica que el SETPOINT de RPM sea CERO
-bool Vel_Cero(void);				//Verifica que el motor este detenido
-void Reset_PIDs(void);				//Resetea los valores de TODOS los PID
-void RX(void);						//RECIBIR
-void TX(void);						//ENVIAR
-void Get_Direccion(void);			//Recibe CODIFICACION de POSICION DIRECCION
-word GrayToBin(word N);				//Pasa de Cogigo GRAY a BINARIO
-void DECODIFICADO(byte* codigo, byte inicio);	//Decodifica el mensaje recibido y lo ubica en las variables
+void Get_Corriente(void);
+void Get_Direccion(PAP *pap_x);
 
 /* User includes (#include below this line is not maintained by Processor Expert) */
 /*
@@ -253,25 +233,37 @@ int main(void)
   lectura_nueva = true;
   pap.FLAG_DIRECCION = true;
   for(;;){
-	  Get_Velocidad();					//LEER DATOS VELOCIDAD
-	  Get_Corriente();					//LEER DATOS CORRIENTE
-	  Get_Direccion();					//LEER DIRECCION
-	  switch (ESTADO){
+	  GetVelocidad(&motor_di);
+	  GetVelocidad(&motor_dd);
+	  GetVelocidad(&motor_td);
+	  GetVelocidad(&motor_ti);
+	  if (FLAG_ADC){
+		  FLAG_ADC = false;
+		  ADC_I_GetChanValue16(MOTOR_DI,&motor_di.adc);
+		  ADC_I_GetChanValue16(MOTOR_DD,&motor_dd.adc);
+		  ADC_I_GetChanValue16(MOTOR_TI,&motor_ti.adc);
+		  ADC_I_GetChanValue16(MOTOR_TD,&motor_td.adc);
+		  ADC_I_Measure(FALSE);
+	  }
+	  Get_Direccion(&pap);					//LEER DIRECCION
 	  
+	  switch (ESTADO){	  
 	  case LA_VELOCIDAD:
 		  if (lectura_nueva){
 			  lectura_nueva = false;
-			  motor_di.duty_entrada = (motor_di.duty_entrada >= MAX16BIT) ? MAX16BIT : motor_di.duty_entrada;
-			  motor_di.duty_entrada = (motor_di.duty_entrada <= MIN16BIT) ? MIN16BIT : motor_di.duty_entrada;
 		  }
 		  break;
 		  
 	  case LC_REMOTO:
 		  if (lectura_nueva){
-			  Reset_PIDs();
+			  Reset_PIDs(&motor_di);
+			  Reset_PIDs(&motor_dd);
+			  Reset_PIDs(&motor_ti);
+			  Reset_PIDs(&motor_td);
 			  lectura_nueva = false;
 		  }
-		  Get_Remoto();
+		  Get_Remoto(&velocidad);
+		  Get_Remoto(&direccion);
 		  
 		  //LEER DIRECCION
 		  direccion.ms = (direccion.ms >= direccion.remoto_cero + REMOTO_ANCHO_PULSO) ? direccion.remoto_cero + REMOTO_ANCHO_PULSO : direccion.ms;
@@ -290,7 +282,7 @@ int main(void)
 			  sentido_act = ADELANTE;
 		  }
 		  if (sentido_act != sentido_ant){
-			  if (Vel_Cero()){
+			  if (Vel_Cero(motor_di,motor_dd,motor_td,motor_ti)){
 				  sentido_ant = sentido_act;
 				  Out_Reversa_PutVal(sentido_act);
 				  cuenta_PID = 0;
@@ -326,8 +318,14 @@ int main(void)
 			  motor_ti.RPM_set = RPM_SET;
 			  motor_td.RPM_set = RPM_SET;
 			  if (RPM_SET != 0){
-				  Control_LC();
-				  RPM_Cero();	//RPM_SET = 0?
+				  Control_LC(&motor_dd);
+				  Control_LC(&motor_di);
+				  Control_LC(&motor_td);
+				  Control_LC(&motor_ti);
+				  RPM_Cero(&motor_dd);	//RPM_SET = 0?
+				  RPM_Cero(&motor_di);
+				  RPM_Cero(&motor_td);
+				  RPM_Cero(&motor_ti);
 				  motor_dd.tension = motor_dd.control;
 				  motor_di.tension = motor_di.control;
 				  motor_td.tension = motor_td.control;
@@ -356,7 +354,8 @@ int main(void)
 		  break;
 		  
 	  case LA_REMOTO:
-		  Get_Remoto();
+		  Get_Remoto(&velocidad);
+		  Get_Remoto(&direccion);
 		  
 		  //LEER DIRECCION
 		  direccion.ms = (direccion.ms >= direccion.remoto_cero + REMOTO_ANCHO_PULSO) ? direccion.remoto_cero + REMOTO_ANCHO_PULSO : direccion.ms;
@@ -511,7 +510,14 @@ int main(void)
 	  default:
 		  break;
 	  }
-	  Tension_PWM();
+	  Tension2Duty(&motor_di);
+	  Tension2Duty(&motor_dd);
+	  Tension2Duty(&motor_td);
+	  Tension2Duty(&motor_ti);
+	  SetDuty(motor_di);
+	  SetDuty(motor_dd);
+	  SetDuty(motor_td);
+	  SetDuty(motor_ti);
 	  
 	  //PRUEBA CONTACTORES
 	  if (FLAG_SW1){
@@ -599,81 +605,6 @@ int main(void)
 **
 ** ###################################################################
 */
-/*
- * ######################## FUNCIONES ###############################
- *  * ######################## FUNCIONES ###############################
- *   * ######################## FUNCIONES ###############################
- *    * ######################## FUNCIONES ###############################
- *       
- */
-
-long Mapeo(long x, long in_min, long in_max, long out_min, long out_max)
-{
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}
-
-void Get_Remoto(void){
-	if (velocidad.FLAG_TIEMPO){
-		velocidad.FLAG_TIEMPO = 0;
-		velocidad.ms = GET_RECEP(velocidad.Input.periodo);
-		velocidad.perdida_senal_remoto = 0;
-	}
-	if (direccion.FLAG_TIEMPO){
-		direccion.FLAG_TIEMPO = 0;
-		direccion.ms = GET_RECEP(direccion.Input.periodo);
-		direccion.perdida_senal_remoto = 0;
-	}
-}
-void Get_Velocidad(void){
-	if (motor_di.FLAG_TIEMPO){
-		motor_di.FLAG_TIEMPO = false;
-		motor_di.ms = GET_VEL(motor_di.Input.periodo);
-		motor_di.rpm=60000/(motor_di.ms/10*24);
-	}
-	if (motor_dd.FLAG_TIEMPO){
-		motor_dd.FLAG_TIEMPO = false;
-		motor_dd.ms = GET_VEL(motor_dd.Input.periodo);
-		motor_dd.rpm=60000/(motor_dd.ms/10*24);
-	}
-	if (motor_ti.FLAG_TIEMPO){
-		motor_ti.FLAG_TIEMPO = false;
-		motor_ti.ms = GET_VEL(motor_ti.Input.periodo);
-		motor_ti.rpm=60000/(motor_ti.ms/10*24);
-	}
-	if (motor_td.FLAG_TIEMPO){
-		motor_td.FLAG_TIEMPO = false;
-		motor_td.ms = GET_VEL(motor_td.Input.periodo);
-		motor_td.rpm=60000/(motor_td.ms/10*24);
-	}	
-	if (motor_di.cuenta_vel_cero >= RESET_VELOCIDAD_MS){	//un pulso, se pone vel en cero										
-		motor_di.FLAG_TIEMPO = false;
-		motor_di.ms = 0;
-		motor_di.rpm = 0;
-		motor_di.cuenta_vel_cero = 0;
-		motor_di.Input.indices = 0;
-	}
-	if (motor_dd.cuenta_vel_cero >= RESET_VELOCIDAD_MS){	//un pulso, se pone vel en cero										
-		motor_dd.FLAG_TIEMPO = false;
-		motor_dd.ms = 0;
-		motor_dd.rpm = 0;
-		motor_dd.cuenta_vel_cero = 0;
-		motor_dd.Input.indices = 0;
-	}
-	if (motor_ti.cuenta_vel_cero >= RESET_VELOCIDAD_MS){	//un pulso, se pone vel en cero										
-		motor_ti.FLAG_TIEMPO = false;
-		motor_ti.ms = 0;
-		motor_ti.rpm = 0;
-		motor_ti.cuenta_vel_cero = 0;
-		motor_ti.Input.indices = 0;
-	}
-	if (motor_td.cuenta_vel_cero >= RESET_VELOCIDAD_MS){	//un pulso, se pone vel en cero										
-		motor_td.FLAG_TIEMPO = false;
-		motor_td.ms = 0;
-		motor_td.rpm = 0;
-		motor_td.cuenta_vel_cero = 0;
-		motor_td.Input.indices = 0;
-	}
-}
 void Get_Corriente(void){
 	if (FLAG_ADC){
 		FLAG_ADC = false;
@@ -684,12 +615,9 @@ void Get_Corriente(void){
 		ADC_I_Measure(FALSE);
 	}
 }
-void Get_Direccion(void){	
+void Get_Direccion(PAP *pap_x){	
 		byte lectura;
 		byte z;
-		if (cuenta_DIRECCION >= 10){
-			cuenta_DIRECCION = cuenta_DIRECCION - 10;
-		}
 		lectura = 0;
 		z = (!BIT0_GetVal()) ? 1 : 0;
 		lectura = lectura + z;
@@ -707,205 +635,5 @@ void Get_Direccion(void){
 		lectura = lectura + z;
 		z = (!BIT7_GetVal()) ? 128 : 0;
 		lectura = lectura + z;
-		pap.direccion_lectura = GrayToBin(lectura);		
-		/*
-		if ((direccion_set <= (lectura_direccion + 1)) && (direccion_set >= (lectura_direccion - 1))){
-			lectura_direccion = lectura_direccion;
-		}
-		*/
-		  
-}
-void RPM_Cero(void){
-	byte i;
-	if (motor_di.rpm == 0 && motor_di.RPM_set == 0){ //1 segundo
-		motor_di.control = 0;
-	}
-	if (motor_dd.rpm == 0 && motor_dd.RPM_set == 0){ //1 segundo
-		motor_dd.control = 0;
-	}
-	if (motor_ti.rpm == 0 && motor_ti.RPM_set == 0){ //1 segundo
-		motor_ti.control = 0;
-	}
-	if (motor_td.rpm == 0 && motor_td.RPM_set == 0){ //1 segundo
-		motor_td.control = 0;
-	}
-}
-void Send_Velocidad(void){
-	
-}
-void Send_RPM(void){
-	
-}
-void Send_Corriente(void){
-	
-}
-void Send_Calibrado(void){
-	
-}
-void Control_LC(void){
-	motor_di.error_RPM = (motor_di.RPM_set - motor_di.rpm);
-	motor_dd.error_RPM = (motor_di.RPM_set - motor_dd.rpm);
-	motor_ti.error_RPM = (motor_di.RPM_set - motor_ti.rpm);
-	motor_td.error_RPM = (motor_di.RPM_set - motor_td.rpm);
-	
-	if (RPM_SET < 10){
-	  CtrlPID_DI_Set_K((float)(K_PID/2));
-	  CtrlPID_DD_Set_K((float)(K_PID/2));
-	  CtrlPID_TI_Set_K((float)(K_PID/2));
-	  CtrlPID_TD_Set_K((float)(K_PID/2));
-	  CtrlPID_DI_Control(motor_di.error_RPM,&motor_di.control);
-	  CtrlPID_DD_Control(motor_dd.error_RPM,&motor_dd.control);
-	  CtrlPID_TI_Control(motor_ti.error_RPM,&motor_ti.control);
-	  CtrlPID_TD_Control(motor_td.error_RPM,&motor_td.control);
-	} else {
-	  CtrlPID_DI_Set_K((float)(K_PID));
-	  CtrlPID_DD_Set_K((float)(K_PID));
-	  CtrlPID_TI_Set_K((float)(K_PID));
-	  CtrlPID_TD_Set_K((float)(K_PID));
-	  CtrlPID_DI_Control(motor_di.error_RPM,&motor_di.control);
-	  CtrlPID_DD_Control(motor_dd.error_RPM,&motor_dd.control);
-	  CtrlPID_TI_Control(motor_ti.error_RPM,&motor_ti.control);
-	  CtrlPID_TD_Control(motor_td.error_RPM,&motor_td.control);
-	}
-	//TI = 0.5352609
-}
-bool Vel_Cero(void){
-	if ((motor_dd.ms + motor_di.ms +
-		  motor_td.ms + motor_ti.ms)>=1){
-		return FALSE;
-	}
-	return TRUE;
-}
-void Tension_PWM(void){
-	//%%%%%%%%%%%%%%%%%%%% VER QUE LA VARIABLE TENSION NO SEA NEGATIVA! %%%%%%%%%%%%%%%%%%%%%%%%%%%%!!!!!!!
-	motor_di.tension = (motor_di.tension >= U_MAX) ? U_MAX : motor_di.tension;
-	motor_dd.tension = (motor_dd.tension >= U_MAX) ? U_MAX : motor_dd.tension;
-	motor_ti.tension = (motor_ti.tension >= U_MAX) ? U_MAX : motor_ti.tension;
-	motor_td.tension = (motor_td.tension >= U_MAX) ? U_MAX : motor_td.tension;
-	
-	motor_di.duty = (motor_di.tension != 0) ? Mapeo(motor_di.tension,U_MIN,U_MAX,DUTY_MIN,DUTY_MAX) : 65535;
-	motor_dd.duty = (motor_dd.tension != 0) ? Mapeo(motor_dd.tension,U_MIN,U_MAX,DUTY_MIN,DUTY_MAX) : 65535;
-	motor_td.duty = (motor_td.tension != 0) ? Mapeo(motor_td.tension,U_MIN,U_MAX,DUTY_MIN,DUTY_MAX) : 65535;
-	motor_ti.duty = (motor_ti.tension != 0) ? Mapeo(motor_ti.tension,U_MIN,U_MAX,DUTY_MIN,DUTY_MAX) : 65535;
-	
-	Out_PWM_DD_SetRatio16(motor_dd.duty);
-	Out_PWM_DI_SetRatio16(motor_di.duty);
-	Out_PWM_TI_SetRatio16(motor_ti.duty);
-	Out_PWM_TD_SetRatio16(motor_td.duty);
-}
-void Reset_PIDs(void){
-	  CtrlPID_DD_Reset();
-	  CtrlPID_DI_Reset();
-	  CtrlPID_TD_Reset();
-	  CtrlPID_TI_Reset();
-}
-void RX(void){
-	//####### DECODIFICAR SEÑAL
-	word setpoint;
-	
-	if (FLAG_RX){
-		//DECODIFICADO
-		DECODIFICADO(rx_buf,rx_read);
-		rx_read = rx_next;
-		
-		//########PASA A TX PARA ENVIAR
-		/*
-		while (rx_read != rx_next){
-			tx_buf[tx_next] = rx_buf[rx_read];
-			inc(rx_read);
-			inc(tx_next);
-		}
-		FLAG_TX = true;
-		*/
-		FLAG_RX = false;
-		
-	}	
-}
-void DECODIFICADO(byte* codigo, byte inicio){
-	/*
-	 * byte*	codigo	=	buffer de informacion
-	 * byte		inicio	=	posicion del primer byte del mensaje dentro del buffer "codigo"
-	 */
-	long var;
-	const unsigned char *pcodigo;
-	bool VALIDAR;
-	byte *pvariables;
-	word la_vel_duty[4];
-	word lc_pc_rpm;
-	byte err;
-	byte ESTADO_ANTERIOR;
-	
-	VALIDAR = FALSE;
-	ESTADO_ANTERIOR = ESTADO;
-	
-	pvariables = (byte *) &la_vel_duty;
-	pcodigo = (const unsigned char *) &codigo[inicio];	
-	if (*pcodigo++ == ':'){
-		switch (*pcodigo++){
-		case (LA_VELOCIDAD):
-				pvariables = (byte *) &la_vel_duty;
-				*pvariables++ = *pcodigo++;
-				*pvariables++ = *pcodigo++;
-				*pvariables++ = *pcodigo++;
-				*pvariables++ = *pcodigo++;
-				*pvariables++ = *pcodigo++;
-				*pvariables++ = *pcodigo++;
-				*pvariables++ = *pcodigo++;
-				*pvariables++ = *pcodigo++;
-				VALIDAR = (*pcodigo++ == ':') ? TRUE : FALSE;
-				if (VALIDAR){
-					ESTADO = LA_VELOCIDAD;				
-				}
-				break;
-		case (LC_PC):
-				lc_pc_rpm = *pcodigo++;
-				VALIDAR = (*pcodigo++ == ':') ? TRUE : FALSE;
-				if (VALIDAR){
-					pc.rpm_global = lc_pc_rpm;
-					ESTADO = LC_PC;				
-				}
-				break;
-		default:
-			return;
-		}
-		if (ESTADO != ESTADO_ANTERIOR){
-			lectura_nueva = TRUE;
-		}
-		
-	}	
-}
-void TX(void){
-	word *SND;
-	word snd;
-	SND = &snd;
-	snd = 0;
-	if (FLAG_TX){
-		FLAG_TX = false;
-		UART_MODBUS_SendBlock(tx_buf,(word)(tx_next - tx_sent),SND);
-		tx_next = 0;
-		tx_sent = 0;
-		
-		/* ENVIAR ENTERO MAPEADO
-		TEXT_Num16uToStr(tx_buf,sizeof(tx_buf),(byte)Mapeo(lectura_direccion,0,255,0,359));
-		TEXT_chcat(tx_buf,sizeof(tx_buf),(byte)'\n');
-		UART_MODBUS_SendBlock(tx_buf,TEXT_strlen((const char *)tx_buf),SND);
-		*/
-	}
-}
-word GrayToBin(word N){
-	word D = N;
-	word X;
-	int i;
-	for(i=0; D>1;i++) D>>=1;
-	D<<=i;
-	X = D;
-	
-	while(X>1){
-		N = N^((N&X)>>1);
-		X>>=1;
-	}
-	return N;
-}
-void ResetVar (void){
-
+		pap->direccion_lectura = GrayToBin(lectura);
 }
