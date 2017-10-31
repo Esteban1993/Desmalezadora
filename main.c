@@ -109,14 +109,13 @@
 #include "IO_Map.h"
 #include "PDD_Includes.h"
 #include "Init_Config.h"
-#include "Struct2.h"
-#include "Defines2.h"
+#include "Struct.h"
+#include "Defines.h"
 #include "Funciones.h"
 
 
 void Get_Corriente(void);
 void Get_Direccion(PAP *pap_x);
-void SetDuty(MOTOR motor_x);
 
 /* User includes (#include below this line is not maintained by Processor Expert) */
 /*
@@ -174,10 +173,10 @@ byte FLAG_DIRECCION = false;	//FLAG usado para definir cuando hay una señal de 
 
 //######################NUEVO!
 
-MOTOR motor_di = {MOTOR_DI, {{0, 0}, 0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, K_PID, 0, TI_PID, 0, 0, 0};
-MOTOR motor_dd = {MOTOR_DD, {{0, 0}, 0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, K_PID, 0, TI_PID, 0, 0, 0};
-MOTOR motor_ti = {MOTOR_TI, {{0, 0}, 0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, K_PID, 0, TI_PID, 0, 0, 0};
-MOTOR motor_td = {MOTOR_TD, {{0, 0}, 0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, K_PID, 0, TI_PID, 0, 0, 0};
+MOTOR motor_di;
+MOTOR motor_dd;
+MOTOR motor_ti;
+MOTOR motor_td;
 
 REMOTO direccion;
 REMOTO velocidad;
@@ -185,8 +184,6 @@ REMOTO velocidad;
 PAP pap;
 
 PC pc;
-
-SERIE serie;
 
 /*lint -save  -e970 Disable MISRA rule (6.3) checking. */
 
@@ -240,7 +237,14 @@ int main(void)
 	  GetVelocidad(&motor_dd);
 	  GetVelocidad(&motor_td);
 	  GetVelocidad(&motor_ti);
-	  Get_Corriente();
+	  if (FLAG_ADC){
+		  FLAG_ADC = false;
+		  ADC_I_GetChanValue16(MOTOR_DI,&motor_di.adc);
+		  ADC_I_GetChanValue16(MOTOR_DD,&motor_dd.adc);
+		  ADC_I_GetChanValue16(MOTOR_TI,&motor_ti.adc);
+		  ADC_I_GetChanValue16(MOTOR_TD,&motor_td.adc);
+		  ADC_I_Measure(FALSE);
+	  }
 	  Get_Direccion(&pap);					//LEER DIRECCION
 	  
 	  switch (ESTADO){	  
@@ -252,10 +256,10 @@ int main(void)
 		  
 	  case LC_REMOTO:
 		  if (lectura_nueva){
-			  Reset_PIDs(motor_di);
-			  Reset_PIDs(motor_dd);
-			  Reset_PIDs(motor_ti);
-			  Reset_PIDs(motor_td);
+			  Reset_PIDs(&motor_di);
+			  Reset_PIDs(&motor_dd);
+			  Reset_PIDs(&motor_ti);
+			  Reset_PIDs(&motor_td);
 			  lectura_nueva = false;
 		  }
 		  Get_Remoto(&velocidad);
@@ -282,10 +286,7 @@ int main(void)
 				  sentido_ant = sentido_act;
 				  Out_Reversa_PutVal(sentido_act);
 				  cuenta_PID = 0;
-				  Reset_PIDs(motor_di);
-				  Reset_PIDs(motor_dd);
-				  Reset_PIDs(motor_ti);
-				  Reset_PIDs(motor_td);
+				  Reset_PIDs();
 				  //AGREGADO JUEVES 26/10
 				  motor_dd.tension = 0;
 				  motor_di.tension = 0;
@@ -310,7 +311,7 @@ int main(void)
 		  }
 		  //END CAMBIO DE SENTIDO
 		  
-		  if (cuenta_PID >= MUESTREO_PID){ //100 milisegundos periodo de muestreo
+		  if (cuenta_PID >= 100){ //10 milisegundos periodo de muestreo
 			  cuenta_PID = 0;
 			  motor_di.RPM_set = RPM_SET;
 			  motor_dd.RPM_set = RPM_SET;
@@ -338,10 +339,7 @@ int main(void)
 				  motor_di.control = 0;
 				  motor_td.control = 0;
 				  motor_ti.control = 0;
-				  Reset_PIDs(motor_di);
-				  Reset_PIDs(motor_dd);
-				  Reset_PIDs(motor_ti);
-				  Reset_PIDs(motor_td);
+				  Reset_PIDs();
 			  }
 		  }
 		  //PERDIDA DE SEÑAL - SALE DEL ESTADO
@@ -376,7 +374,7 @@ int main(void)
 			  sentido_act = ADELANTE;
 		  }
 		  if (sentido_act != sentido_ant){
-			  if (Vel_Cero(motor_di,motor_dd,motor_td,motor_ti)){
+			  if (Vel_Cero()){
 				  sentido_ant = sentido_act;
 				  Out_Reversa_PutVal(sentido_act);
 			  } else {
@@ -409,10 +407,7 @@ int main(void)
 		  
 	  case LC_PC:
 		  if (lectura_nueva){
-			  Reset_PIDs(motor_di);
-			  Reset_PIDs(motor_dd);
-			  Reset_PIDs(motor_ti);
-			  Reset_PIDs(motor_td);
+			  Reset_PIDs();
 			  lectura_nueva = false;
 		  }
 		  RPM_SET = pc.rpm_global; //HACER
@@ -429,24 +424,18 @@ int main(void)
 			  sentido_act = ADELANTE;
 		  }
 		  if (sentido_act != sentido_ant){
-			  if (Vel_Cero(motor_di,motor_dd,motor_td,motor_ti)){
+			  if (Vel_Cero()){
 				  sentido_ant = sentido_act;
 				  Out_Reversa_PutVal(sentido_act);
 			  } else {
 				  RPM_SET = 0;
 			  }
 		  }
-		  if (cuenta_PID >= MUESTREO_PID){ //10 milisegundos periodo de muestreo
+		  if (cuenta_PID >= 100){ //10 milisegundos periodo de muestreo
 			  cuenta_PID = 0;
 			  if (RPM_SET != 0){
-				  Control_LC(&motor_di);
-				  Control_LC(&motor_dd);
-				  Control_LC(&motor_td);
-				  Control_LC(&motor_ti);
-				  RPM_Cero(&motor_dd);	//RPM_SET = 0?
-				  RPM_Cero(&motor_di);
-				  RPM_Cero(&motor_td);
-				  RPM_Cero(&motor_ti);
+				  Control_LC();
+				  RPM_Cero();//RPM_SET = 0?
 				  motor_dd.tension = motor_dd.control;
 				  motor_di.tension = motor_di.control;
 				  motor_td.tension = motor_td.control;
@@ -464,8 +453,7 @@ int main(void)
 		  break;
 		  
 	  case CALIBRACION:
-		  Get_Remoto(&velocidad);
-		  Get_Remoto(&direccion);
+		  Get_Remoto();
 		  if (velocidad.ms != 0 || direccion.ms != 0 || !lectura_nueva){
 			  lectura_nueva = false;
 		  
@@ -512,10 +500,7 @@ int main(void)
 		  
 	  case PERDIDA_SENAL:
 		  ESTADO = CALIBRACION;
-		  Reset_PIDs(motor_di);
-		  Reset_PIDs(motor_dd);
-		  Reset_PIDs(motor_ti);
-		  Reset_PIDs(motor_td);
+		  Reset_PIDs();
 		  motor_di.tension = 0;
 		  motor_dd.tension = 0;
 		  motor_ti.tension = 0;
@@ -573,10 +558,7 @@ int main(void)
 	  //######## END DIRECCION
 	  
 	  //RX();
-	  RX(serie, &motor_di, &motor_dd, &motor_td, &motor_ti, &ESTADO);
-	  
 	  //TX();
-	  
 	  if (cuenta_RECIBIR >= 500){
 		  cuenta_RECIBIR = 0;
 		  //FLAG_TX = true;		  
@@ -653,23 +635,5 @@ void Get_Direccion(PAP *pap_x){
 		lectura = lectura + z;
 		z = (!BIT7_GetVal()) ? 128 : 0;
 		lectura = lectura + z;
-		pap_x->direccion_lectura = GrayToBin(lectura);
-}
-void SetDuty(MOTOR motor_x){
-	switch (motor_x.nro){
-	case MOTOR_DI:
-		Out_PWM_DI_SetRatio16(motor_x.duty);		
-		break;
-	case MOTOR_DD:
-		Out_PWM_DD_SetRatio16(motor_x.duty);	
-		break;
-	case MOTOR_TD:
-		Out_PWM_TD_SetRatio16(motor_x.duty);	
-		break;
-	case MOTOR_TI:
-		Out_PWM_TI_SetRatio16(motor_x.duty);	
-		break;
-	default:
-		break;
-	}
+		pap->direccion_lectura = GrayToBin(lectura);
 }

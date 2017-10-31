@@ -39,8 +39,8 @@
 #include "Events.h"
 #include "Init_Config.h"
 #include "PDD_Includes.h"
-#include "Struct2.h"
-#include "Defines2.h"
+#include "Struct.h"
+#include "Defines.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -88,8 +88,6 @@ extern REMOTO direccion;
 extern REMOTO velocidad;
 
 extern PAP pap;
-
-extern SERIE serie;
 
 /* User includes (#include below this line is not maintained by Processor Expert) */
 
@@ -413,7 +411,7 @@ void ReceptorDireccion_OnCapture(void)
 */
 void IntDireccion_OnInterrupt(void)
 {
-	static byte step_direccion = FREQ_PWM_DUTY>>1; //Define el tiempo en ALTO
+	static byte step_direccion = FREQ_PWM_DUTY/2; //Define el tiempo en ALTO
 	
 	if (pap.FLAG_DIRECCION){						//Esta habilitado el PWM de direccion?	
 		if (pap.pwm_direccion == 0){				
@@ -471,11 +469,11 @@ void UART_MODBUS_OnError(void)
 */
 void UART_MODBUS_OnRxChar(void)
 {
-	UART_MODBUS_RecvChar(&serie.rx_buf[serie.rx_next]);
-	if (serie.rx_buf[serie.rx_next] == '\r'){
-		serie.FLAG_RX = 1;
+	UART_MODBUS_RecvChar(&rx_buf[rx_next]);
+	if (rx_buf[rx_next] == '\r'){
+		FLAG_RX = 1;
 	}
-	inc(serie.rx_next);
+	inc(rx_next);
 }
 
 /*
