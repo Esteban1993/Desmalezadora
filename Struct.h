@@ -11,8 +11,9 @@ typedef struct input_capture {
 } INPUT_CAPTURE;
 
 typedef struct motor {
+	uint8 nro;
 	INPUT_CAPTURE Input;
-	byte FLAG_TIEMPO;				//FLAG de VELOCIDAD LEIDA
+	uint8 FLAG_TIEMPO;				//FLAG de VELOCIDAD LEIDA
 	uint32 posicion_pulsos;			//Contador de Flancos del Motor
 	uint16 cuenta_vel_cero;			//Contador para determinar Vel CERO si no se registran nuevos flancos
 	uint16 adc;						//Valores de los ADC de cada MOTOR
@@ -35,7 +36,7 @@ typedef struct pap {
 	uint8 pwm_direccion;			//Contador para el PWM Manual
 	uint16 pasos_dados;				//Cantidad de PASOS que se ha dado	//pwm_pasos
 	uint16 pasos_adar;				//Pasos que se desean - PASO A PASO //pasos_direccion
-	uint8 direccion_lectura;		//Lee la posicion del PASO a PASO
+	uint16 direccion_lectura;		//Lee la posicion del PASO a PASO
 	uint8 direccion_set;			//SETPOINT de direcion
 	uint8 FLAG_EN;					//PASO A PASO ENEABLE
 	uint8 FLAG_SENTIDO;				//PASO A PASO SENTIDO DE GIRO
