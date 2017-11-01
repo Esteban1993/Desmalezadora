@@ -47,7 +47,7 @@ typedef unsigned long int       uint32;
  */
 typedef struct input_capture {
 	uint16 datos[2];				//Contador de pulsos de cada flanco [1xMOTOR 2xVariableAnteriorYActual] 
-	int16 periodo;					//Diferencia entre los pulsos 2 y 1 de cada MOTOR
+	uint16 periodo;					//Diferencia entre los pulsos 2 y 1 de cada MOTOR
 	uint8 indices;					//Indice de pulsos
 	int8 err;						//Por si ocurre un error al momento de leer pulsos
 } INPUT_CAPTURE;

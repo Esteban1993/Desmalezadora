@@ -581,7 +581,12 @@ int main(void)
 		  cuenta_RECIBIR = 0;
 		  //FLAG_TX = true;		  
 	  }
-	  if (cnt_aux >= 1000){
+	  if (cnt_aux >= 100 && ESTADO == CALIBRACION){
+		  cnt_aux = 0;
+		  BitLed_Azul_NegVal();
+		  Status_LED_NegVal();
+	  }
+	  if (cnt_aux >= 1000 && ESTADO != CALIBRACION){
 		  cnt_aux = 0;
 		  BitLed_Azul_NegVal();
 		  Status_LED_NegVal();
