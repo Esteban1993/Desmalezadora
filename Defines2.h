@@ -1,3 +1,12 @@
+/*
+ * Defines2.h
+ *
+ *  Created on: Oct 31, 2017
+ *      Author: Esteban
+ */
+
+#ifndef DEFINES2_H_
+#define DEFINES2_H_
 
 /*
  * ######################## DEFINES ###############################
@@ -37,6 +46,7 @@
 
 #define K_PID					33
 #define TI_PID					0.4
+#define MUESTREO_PID			100
 
 #define BUTTON_PRESSED      	0
 #define BUTTON_NOT_PRESSED  	1
@@ -67,10 +77,10 @@
 #define MAX16BIT				65535
 #define MIN16BIT				0
 
-#define BUF_SIZE 				64
+#define BUF_SIZE 				512
 #define inc(x) 					{x++; x&=(BUF_SIZE-1);}
 
-#define FREQ_PWM_DUTY			10
+#define FREQ_PWM_DUTY			2
 
 #define TIMEOUT_RX				5000
 #define DIRECCION_MODBUS		9
@@ -79,3 +89,7 @@
 #define	DIRECCION_ANTI			BitOut_DIR_SENT_ClrVal()
 #define DIRECCION_ON			BitOut_DIR_EN_ClrVal()
 #define DIRECCION_OFF			BitOut_DIR_EN_SetVal()
+
+
+
+#endif /* DEFINES2_H_ */
