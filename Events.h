@@ -114,6 +114,8 @@
 #include "BitIoLdd14.h"
 #include "BIT7.h"
 #include "BitIoLdd15.h"
+#include "Btn_Emergencia.h"
+#include "ExtIntLdd2.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -432,6 +434,20 @@ void UART_MODBUS_OnFreeTxBuf(void);
 ** ===================================================================
 */
 void UART_MODBUS_OnTxComplete(void);
+
+void Btn_Emergencia_OnInterrupt(void);
+/*
+** ===================================================================
+**     Event       :  Btn_Emergencia_OnInterrupt (module Events)
+**
+**     Component   :  Btn_Emergencia [ExtInt]
+**     Description :
+**         This event is called when an active signal edge/level has
+**         occurred.
+**     Parameters  : None
+**     Returns     : Nothing
+** ===================================================================
+*/
 
 /* END Events */
 

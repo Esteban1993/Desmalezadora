@@ -65,11 +65,12 @@ extern byte FLAG_DIRECCION_SENTIDO;			//PASO A PASO SENTIDO DE GIRO
 extern byte FLAG_SW1;						//FLAG DEL PULSADOR 1
 extern byte FLAG_SW2;						//FLAG DEL PULSADOR 2
 extern word perdida_senal_remoto[2];		//Contador para detectar perdida de señal en modo REMOTO o CALIBRACION
+extern word cuenta_EMERGENCIA;
 extern word cnt_aux;						//Cuenta AUXILIAR en interrupcion INTTIEMPO
 extern word cuenta_PID;						//Cuenta de tiempo PID
 extern word cuenta_RECIBIR;					//Cuenta de tiempo RECIBIR
 extern word cuenta_ENVIAR;					//Cuenta de tiempo ENVIAR
-extern word cuenta_RX;						//Cuenta de tiempo RECIBIR
+extern word cuenta_TX;						//Cuenta de tiempo RECIBIR
 extern word cuenta_DIRECCION;				//Cuenta para leer direccion
 extern byte FLAG_TIEMPO[4];					//FLAG de VELOCIDAD LEIDA
 extern byte FLAG_RECEPTOR[2];				//FLAG de ANCHO DE PULSO LEIDO REMOTO
@@ -177,10 +178,11 @@ void IntTiempo_OnInterrupt(void)
 	byte i;
 	
 	cnt_aux++;
+	cuenta_EMERGENCIA++;
 	cuenta_RECIBIR++;
 	cuenta_ENVIAR++;
 	cuenta_PID++;
-	cuenta_RX++;
+	cuenta_TX++;
 	cuenta_DIRECCION++;
 	motor_di.cuenta_vel_cero += 1;
 	motor_dd.cuenta_vel_cero += 1;
@@ -235,7 +237,7 @@ void Input_Encoder_DD_OnCapture(void)
 		motor_dd.posicion_pulsos++;
 		motor_dd.cuenta_vel_cero = 0;
 	}
-	motor_dd.Input.err = Input_Encoder_DI_GetCaptureValue(&motor_dd.Input.datos[motor_dd.Input.indices]);
+	motor_dd.Input.err = Input_Encoder_DD_GetCaptureValue(&motor_dd.Input.datos[motor_dd.Input.indices]);
 	motor_dd.Input.indices++;
 }
 
@@ -263,7 +265,7 @@ void Input_Encoder_TD_OnCapture(void)
 		motor_td.posicion_pulsos++;
 		motor_td.cuenta_vel_cero = 0;
 	}
-	motor_td.Input.err = Input_Encoder_DI_GetCaptureValue(&motor_td.Input.datos[motor_td.Input.indices]);
+	motor_td.Input.err = Input_Encoder_TD_GetCaptureValue(&motor_td.Input.datos[motor_td.Input.indices]);
 	motor_td.Input.indices++;
 }
 
@@ -291,7 +293,7 @@ void Input_Encoder_TI_OnCapture(void)
 		motor_ti.posicion_pulsos++;
 		motor_ti.cuenta_vel_cero = 0;
 	}
-	motor_ti.Input.err = Input_Encoder_DI_GetCaptureValue(&motor_ti.Input.datos[motor_ti.Input.indices]);
+	motor_ti.Input.err = Input_Encoder_TI_GetCaptureValue(&motor_ti.Input.datos[motor_ti.Input.indices]);
 	motor_ti.Input.indices++;
 }
 
@@ -416,17 +418,21 @@ void IntDireccion_OnInterrupt(void)
 	static byte step_direccion = FREQ_PWM_DUTY>>1; //Define el tiempo en ALTO
 	
 	if (pap.FLAG_DIRECCION){						//Esta habilitado el PWM de direccion?	
-		if (pap.pwm_direccion == 0){				
-			BitOut_DIR_PWM_SetVal();				//Salida en ALTO
-		}
-		if (pap.pwm_direccion == step_direccion){	//Ya paso el tiempo en alto?		
-			BitOut_DIR_PWM_ClrVal();				//Salida en BAJO
-		}
-		pap.pwm_direccion++;						//Incremento un step del PWM
-		if (pap.pwm_direccion == FREQ_PWM_DUTY){	//Cuando se alcanza el STEP de la frecuencia, reseteo
-			pap.pasos_dados++;						//Se realizo UN PASO
-			pap.pwm_direccion = 0;					//Reseteo el step
-		}
+		if (pap.direccion_lectura <= LIMITE_DIRECCION_DERECHO || pap.direccion_lectura >= LIMITE_DIRECCION_IZQUIERDO){
+			if (pap.pwm_direccion == 0){				
+				BitOut_DIR_PWM_SetVal();				//Salida en ALTO
+			}
+			if (pap.pwm_direccion == step_direccion){	//Ya paso el tiempo en alto?		
+				BitOut_DIR_PWM_ClrVal();				//Salida en BAJO
+			}
+			pap.pwm_direccion++;						//Incremento un step del PWM
+			if (pap.pwm_direccion == FREQ_PWM_DUTY){	//Cuando se alcanza el STEP de la frecuencia, reseteo
+				pap.pasos_dados++;						//Se realizo UN PASO
+				pap.pwm_direccion = 0;					//Reseteo el step
+			}
+		} else {
+			pap.FLAG_DIRECCION = false;
+		}		
 	} else {
 		pap.pasos_dados = 0;
 		BitOut_DIR_PWM_ClrVal();
@@ -548,6 +554,50 @@ void UART_MODBUS_OnFreeTxBuf(void)
 void UART_MODBUS_OnTxComplete(void)
 {
   /* Write your code here ... */
+}
+
+/*
+** ===================================================================
+**     Event       :  Btn_Emergencia_OnInterrupt (module Events)
+**
+**     Component   :  Btn_Emergencia [ExtInt]
+**     Description :
+**         This event is called when an active signal edge/level has
+**         occurred.
+**     Parameters  : None
+**     Returns     : Nothing
+** ===================================================================
+*/
+void Btn_Emergencia_OnInterrupt(void)
+{
+  /* Write your code here ... */
+	while(Btn_Emergencia_GetVal()){
+		ESTADO = PERDIDA_SENAL;
+		Reset_PIDs(motor_di);
+		Reset_PIDs(motor_dd);
+		Reset_PIDs(motor_ti);
+		Reset_PIDs(motor_td);
+		motor_di.tension = 0;
+		motor_dd.tension = 0;
+		motor_ti.tension = 0;
+		motor_td.tension = 0;
+		cuenta_EMERGENCIA = 0;
+	}
+	while(cuenta_EMERGENCIA <= 1000){}
+	cuenta_EMERGENCIA = 0;
+	while(Btn_Emergencia_GetVal()){
+		ESTADO = PERDIDA_SENAL;
+		Reset_PIDs(motor_di);
+		Reset_PIDs(motor_dd);
+		Reset_PIDs(motor_ti);
+		Reset_PIDs(motor_td);
+		motor_di.tension = 0;
+		motor_dd.tension = 0;
+		motor_ti.tension = 0;
+		motor_td.tension = 0;
+		cuenta_EMERGENCIA = 0;
+	}
+	while(cuenta_EMERGENCIA <= 1000){}
 }
 
 /* END Events */

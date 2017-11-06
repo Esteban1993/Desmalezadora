@@ -148,4 +148,32 @@ void ResetVar (void){
 void RX (SERIE seriex, MOTOR *motordi, MOTOR *motordd, MOTOR *motortd, MOTOR *motorti, uint8 *ESTADO){
 	
 }
-
+void NumeroFin(SERIE *serie_x){
+	unsigned char i;
+	i = 0;
+	serie_x->tx_next = 0;
+	while(serie_x->tx_buf[i]!='\n'){
+		inc(serie_x->tx_next);	
+		i++;
+	}
+	inc(serie_x->tx_next);	
+}
+MOTOR_TX TX_Motor(MOTOR motor_x){
+	MOTOR_TX tx;
+	tx.i = motor_x.adc;
+	tx.posicion = motor_x.posicion_pulsos;
+	tx.rpm = motor_x.rpm;
+	return tx;
+}
+void Motor2Send(SERIE *serie, MOTOR_TX *motor){
+	uint8 *p;
+	uint8 i;
+	i=0;
+	p = (uint8 *)motor;
+	while(i<=STRLEN_TXMOTOR-1){
+		serie->tx_buf[serie->tx_next] = *p;
+		inc(serie->tx_next);
+		p++;
+		i++;
+	}
+}

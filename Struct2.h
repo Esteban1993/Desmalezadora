@@ -49,7 +49,7 @@ typedef struct input_capture {
 	uint16 datos[2];				//Contador de pulsos de cada flanco [1xMOTOR 2xVariableAnteriorYActual] 
 	uint16 periodo;					//Diferencia entre los pulsos 2 y 1 de cada MOTOR
 	uint8 indices;					//Indice de pulsos
-	int8 err;						//Por si ocurre un error al momento de leer pulsos
+	uint8 err;						//Por si ocurre un error al momento de leer pulsos
 } INPUT_CAPTURE;
 
 typedef struct motor {
@@ -84,6 +84,7 @@ typedef struct pap {
 	uint8 FLAG_EN;					//PASO A PASO ENEABLE
 	uint8 FLAG_SENTIDO;				//PASO A PASO SENTIDO DE GIRO
 	uint8 FLAG_DIRECCION;			//FLAG usado para definir cuando hay una señal de direccion
+	uint8 FLAG_HABILITADO;			//Habilitacion Direccion
 } PAP;
 
 typedef struct remoto {
@@ -96,6 +97,7 @@ typedef struct remoto {
 } REMOTO;
 
 typedef struct serie {
+	uint8 send[BUF_SIZE];
 	uint8 tx_buf[BUF_SIZE];            	// TX buffer
 	uint8 tx_next;						// TX indice siguiente a GUARDAR						
 	uint8 tx_sent;					  	// TX indice siguiente a MANDAR
@@ -111,6 +113,7 @@ typedef struct pc {
 } PC;
 
 typedef struct motor_tx {
+	uint8 nro;
 	uint16 rpm;
 	uint16 i;
 	uint32 posicion;

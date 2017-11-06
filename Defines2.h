@@ -42,10 +42,10 @@
 #define REMOTO_DIR_CERO			150		
 #define REMOTO_DIR_MAX			205
 #define REMOTO_DIR_MIN			97
-#define VENTANA_DIRECCION		10
+#define VENTANA_DIRECCION		2
 
 #define K_PID					33
-#define TI_PID					0.4
+#define TI_PID					4	//NO ANDA, HAY QUE PONER 4 y DIVIDIR POR 10 CASTEANDO A FLOAT
 #define MUESTREO_PID			100
 
 #define BUTTON_PRESSED      	0
@@ -55,9 +55,8 @@
 
 #define DUTY_MAX				0
 #define DUTY_MIN				40000//37000
+#define DUTY_CERO				65535
 
-#define LIMITE_DIRECCION_DERECHO	246
-#define LIMITE_DIRECCION_IZQUIERDO	150
 
 #define SET_RPM_MAX				100		//definir
 #define SET_RPM_MIN				0
@@ -77,10 +76,11 @@
 #define MAX16BIT				65535
 #define MIN16BIT				0
 
-#define BUF_SIZE 				512
+#define BUF_SIZE 				256
 #define inc(x) 					{x++; x&=(BUF_SIZE-1);}
 
 #define FREQ_PWM_DUTY			2
+#define STRLEN_TXMOTOR			8
 
 #define TIMEOUT_RX				5000
 #define DIRECCION_MODBUS		9
@@ -89,6 +89,9 @@
 #define	DIRECCION_ANTI			BitOut_DIR_SENT_ClrVal()
 #define DIRECCION_ON			BitOut_DIR_EN_ClrVal()
 #define DIRECCION_OFF			BitOut_DIR_EN_SetVal()
+#define LIMITE_DIRECCION_DERECHO	238
+#define DIRECCION_CENTRO			200
+#define LIMITE_DIRECCION_IZQUIERDO	160
 
 
 
