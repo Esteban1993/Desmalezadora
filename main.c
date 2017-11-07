@@ -318,20 +318,14 @@ int main(void)
 				  Error_PID(&motor_di);
 				  Error_PID(&motor_td);
 				  Error_PID(&motor_ti);
-				  CtrlPID_DD_Set_K((float)(motor_dd.k));
-				  CtrlPID_DI_Set_K((float)(motor_di.k));
-				  CtrlPID_TD_Set_K((float)(motor_td.k));
-				  CtrlPID_TI_Set_K((float)(motor_ti.k));
-				  CtrlPID_DD_Control(motor_dd.error_RPM,&motor_dd.control);
-				  CtrlPID_DI_Control(motor_di.error_RPM,&motor_di.control);
-				  CtrlPID_TD_Control(motor_td.error_RPM,&motor_td.control);
-				  CtrlPID_TI_Control(motor_ti.error_RPM,&motor_ti.control);
-				  /*
+				  CtrlPID_SetK(&motor_dd);
+				  CtrlPID_SetK(&motor_di);
+				  CtrlPID_SetK(&motor_td);
+				  CtrlPID_SetK(&motor_ti);				  
 				  CtrlPID_Control(&motor_dd);
 				  CtrlPID_Control(&motor_di);
 				  CtrlPID_Control(&motor_td);
 				  CtrlPID_Control(&motor_ti);
-				  */
 				  RPM_Cero(&motor_dd);	//RPM_SET = 0?
 				  RPM_Cero(&motor_di);
 				  RPM_Cero(&motor_td);

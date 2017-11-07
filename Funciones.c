@@ -47,26 +47,25 @@ void RPM_Cero(MOTOR *motor_x){
 }
 void Error_PID(MOTOR *motor_x){
 	motor_x->error_RPM = (motor_x->RPM_set - motor_x->rpm);	
+}
+void CtrlPID_SetK(MOTOR *motor_x){
 	if (motor_x->RPM_set < 10){
 		motor_x->k = K_PID/2;
 	} else {
 		motor_x->k = K_PID;
 	}
-	//TI = 0.5352609
-}
-void CtrlPID_SetK(MOTOR motor_x){
-	switch (motor_x.nro){
+	switch (motor_x->nro){
 	case MOTOR_DI:
-		CtrlPID_DI_Set_K((float)(motor_x.k));		
+		CtrlPID_DI_Set_K((float)(motor_x->k));		
 		break;
 	case MOTOR_DD:
-		CtrlPID_DD_Set_K((float)(motor_x.k));
+		CtrlPID_DD_Set_K((float)(motor_x->k));
 		break;
 	case MOTOR_TD:
-		CtrlPID_TD_Set_K((float)(motor_x.k));
+		CtrlPID_TD_Set_K((float)(motor_x->k));
 		break;
 	case MOTOR_TI:
-		CtrlPID_TI_Set_K((float)(motor_x.k));
+		CtrlPID_TI_Set_K((float)(motor_x->k));
 		break;
 	default:
 		break;
@@ -75,16 +74,16 @@ void CtrlPID_SetK(MOTOR motor_x){
 void CtrlPID_Control(MOTOR *motor_x){
 	switch (motor_x->nro){
 	case MOTOR_DI:
-		CtrlPID_DI_Control(motor_x->error_RPM,&motor_x->control);		
+		CtrlPID_DI_Control(motor_x->error_RPM,&(motor_x->control));		
 		break;
 	case MOTOR_DD:
-		CtrlPID_DD_Control(motor_x->error_RPM,&motor_x->control);	
+		CtrlPID_DD_Control(motor_x->error_RPM,&(motor_x->control));	
 		break;
 	case MOTOR_TD:
-		CtrlPID_TD_Control(motor_x->error_RPM,&motor_x->control);	
+		CtrlPID_TD_Control(motor_x->error_RPM,&(motor_x->control));	
 		break;
 	case MOTOR_TI:
-		CtrlPID_TI_Control(motor_x->error_RPM,&motor_x->control);	
+		CtrlPID_TI_Control(motor_x->error_RPM,&(motor_x->control));	
 		break;
 	default:
 		break;
