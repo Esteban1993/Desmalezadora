@@ -23,7 +23,7 @@ long Mapeo(long x, long in_min, long in_max, long out_min, long out_max);
 void Get_Remoto(REMOTO *remoto_x);
 void GetVelocidad (MOTOR *motor_x);
 void RPM_Cero(MOTOR *motor_x);
-void Control_LC(MOTOR *motor_x);
+void Error_PID(MOTOR *motor_x);
 void CtrlPID_SetK(MOTOR motor_x);
 void CtrlPID_Control(MOTOR *motor_x);
 unsigned char Vel_Cero(MOTOR motor_1, MOTOR motor_2, MOTOR motor_3, MOTOR motor_4);

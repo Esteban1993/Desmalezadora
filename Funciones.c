@@ -40,23 +40,17 @@ void GetVelocidad (MOTOR *motor_x){
 		motor_x->Input.indices = 0;
 	}
 }
-
-
 void RPM_Cero(MOTOR *motor_x){
 	if (motor_x->rpm == 0 && motor_x->RPM_set == 0){ //1 segundo
 		motor_x->control = 0;
 	}
 }
-void Control_LC(MOTOR *motor_x){
+void Error_PID(MOTOR *motor_x){
 	motor_x->error_RPM = (motor_x->RPM_set - motor_x->rpm);	
 	if (motor_x->RPM_set < 10){
 		motor_x->k = K_PID/2;
-		CtrlPID_SetK(*motor_x);
-		CtrlPID_Control(motor_x);
 	} else {
 		motor_x->k = K_PID;
-		CtrlPID_SetK(*motor_x);
-		CtrlPID_Control(motor_x);
 	}
 	//TI = 0.5352609
 }

@@ -394,7 +394,7 @@ void ReceptorDireccion_OnCapture(void)
 			direccion.FLAG_TIEMPO = 0;
 		}
 	}
-	direccion.Input.err = ReceptorVelocidad_GetCaptureValue(&direccion.Input.datos[direccion.Input.indices]);
+	direccion.Input.err = ReceptorDireccion_GetCaptureValue(&direccion.Input.datos[direccion.Input.indices]);
 	direccion.Input.indices++;
 }
 
