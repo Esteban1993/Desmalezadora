@@ -46,10 +46,12 @@ typedef unsigned long int       uint32;
  * ######################## ESTRUCTURAS ###############################
  */
 typedef struct input_capture {
+	uint8 nro;						//nro de canal del Input
 	uint16 datos[2];				//Contador de pulsos de cada flanco [1xMOTOR 2xVariableAnteriorYActual] 
 	uint16 periodo;					//Diferencia entre los pulsos 2 y 1 de cada MOTOR
 	uint8 indices;					//Indice de pulsos
 	uint8 err;						//Por si ocurre un error al momento de leer pulsos
+	uint8 edge;						//Flanco en el que esta trabajando
 } INPUT_CAPTURE;
 
 typedef struct motor {
@@ -61,6 +63,7 @@ typedef struct motor {
 	uint16 adc;						//Valores de los ADC de cada MOTOR
 	uint16 i;						//Valores de Corriente
 	uint16 ms;						//Velocidad en ms del encoder
+	uint16 ms_ant;					//Velocidad en ms del encoder
 	uint16 rpm;						//Lectura RPM
 	uint16 RPM_set;					//SETPOINT DE RPM GLOBAL
 	int32 error_RPM;				//Entrada al PID [SETPOINT - LECTURA]

@@ -177,10 +177,10 @@ word tension_global = 0;
 
 //######################NUEVO!
 
-MOTOR motor_di = {MOTOR_DI, {{0, 0}, 0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, K_PID, 0, TI_PID, 0, DUTY_CERO, 0};
-MOTOR motor_dd = {MOTOR_DD, {{0, 0}, 0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, K_PID, 0, TI_PID, 0, DUTY_CERO, 0};
-MOTOR motor_ti = {MOTOR_TI, {{0, 0}, 0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, K_PID, 0, TI_PID, 0, DUTY_CERO, 0};
-MOTOR motor_td = {MOTOR_TD, {{0, 0}, 0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, K_PID, 0, TI_PID, 0, DUTY_CERO, 0};
+MOTOR motor_di = {MOTOR_DI, {MOTOR_DI, {0, 0}, 0, 0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, K_PID, 0, TI_PID, 0, DUTY_CERO, 0};
+MOTOR motor_dd = {MOTOR_DD, {MOTOR_DD, {0, 0}, 0, 0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, K_PID, 0, TI_PID, 0, DUTY_CERO, 0};
+MOTOR motor_ti = {MOTOR_TI, {MOTOR_TI, {0, 0}, 0, 0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, K_PID, 0, TI_PID, 0, DUTY_CERO, 0};
+MOTOR motor_td = {MOTOR_TD, {MOTOR_TD, {0, 0}, 0, 0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, K_PID, 0, TI_PID, 0, DUTY_CERO, 0};
 
 MOTOR_TX tx_dd;
 
@@ -201,7 +201,7 @@ int main(void)
 {
 	byte i;
 	byte x;
-	byte aux;
+	
 
   /* Write your local variable definition here */
 
@@ -232,22 +232,109 @@ int main(void)
   rpm_max_control = 40;
   lectura_nueva = true;
   pap.FLAG_HABILITADO = false;
-  Btn_Emergencia_Disable();
+  pap.FLAG_EN = true;
   for(;;){
+	  while(true){
+	  motor_di.tension = tension_global;
+	  motor_dd.tension = tension_global;
+	  motor_td.tension = tension_global;
+	  motor_ti.tension = tension_global;
+	  Tension2Duty(&motor_di);
+	  Tension2Duty(&motor_dd);
+	  Tension2Duty(&motor_td);
+	  Tension2Duty(&motor_ti);
+	  SetDuty(motor_di);
+	  SetDuty(motor_dd);
+	  SetDuty(motor_td);
+	  SetDuty(motor_ti);
+	  Get_Direccion(&pap);					//LEER DIRECCION
+	  
+	  if(cuenta_TX >= 100){
+		  TEXT_strcpy(serie.tx_buf,sizeof(serie.tx_buf),(unsigned char*)"Mdd-");
+		  TEXT_strcatNum16u(serie.tx_buf,sizeof(serie.tx_buf),(word)motor_dd.ms);
+		  /*	  
+		  TEXT_strcat(serie.tx_buf,sizeof(serie.tx_buf),(unsigned char*)" Mdi-");
+		  TEXT_strcatNum16u(serie.tx_buf,sizeof(serie.tx_buf),(word)motor_di.ms);
+		  TEXT_strcat(serie.tx_buf,sizeof(serie.tx_buf),(unsigned char*)" Mtd-");
+		  TEXT_strcatNum16u(serie.tx_buf,sizeof(serie.tx_buf),(word)motor_td.ms);
+		  TEXT_strcat(serie.tx_buf,sizeof(serie.tx_buf),(unsigned char*)" Mti-");
+		  TEXT_strcatNum16u(serie.tx_buf,sizeof(serie.tx_buf),(word)motor_ti.ms);
+		  TEXT_strcat(serie.tx_buf,sizeof(serie.tx_buf),(unsigned char*)" ");
+		  TEXT_strcatNum16u(serie.tx_buf,sizeof(serie.tx_buf),(word)cuenta_TX);
+		  */
+		  TEXT_chcat(serie.tx_buf,sizeof(serie.tx_buf),'\r');
+		  TEXT_chcat(serie.tx_buf,sizeof(serie.tx_buf),'\n');
+		  NumeroFin(&serie);
+		  /*
+		  tx_dd = TX_Motor(motor_dd);
+		  Motor2Send(&serie,&tx_dd);
+		  serie.tx_buf[serie.tx_next] = '\r';
+		  inc(serie.tx_next);
+		  serie.tx_buf[serie.tx_next] = '\n';
+		  inc(serie.tx_next);
+		  */			  
+		  cuenta_TX -= 100;
+		  serie.FLAG_TX = true;
+	  }
 	  GetVelocidad(&motor_di);
 	  GetVelocidad(&motor_dd);
 	  GetVelocidad(&motor_td);
 	  GetVelocidad(&motor_ti);
 	  Get_Corriente();
-	  Get_Direccion(&pap);					//LEER DIRECCION
+	  if (cnt_aux >= 100){
+		  cnt_aux -= 100;
+		  BitLed_Azul_NegVal();
+		  Status_LED_NegVal();
+	  }
+	  TXS(&serie);
+	  //####### DIRECCION
+	  pap.FLAG_HABILITADO = true;
+	  if (pap.FLAG_HABILITADO){
+		  pap.FLAG_HABILITADO = false;
+		  if (pap.FLAG_EN){
+			  DIRECCION_ON;
+		  } else {
+			  DIRECCION_OFF;
+		  }
+		  pap.direccion_set = (pap.direccion_set >= LIMITE_DIRECCION_DERECHO) ? LIMITE_DIRECCION_DERECHO : pap.direccion_set;
+		  pap.direccion_set = (pap.direccion_set <= LIMITE_DIRECCION_IZQUIERDO) ? LIMITE_DIRECCION_IZQUIERDO : pap.direccion_set;
+		  if (pap.direccion_set > (pap.direccion_lectura + VENTANA_DIRECCION)){
+			  pap.FLAG_SENTIDO = DERECHA;
+			  pap.FLAG_DIRECCION = true;
+		  }
+		  if (pap.direccion_set < (pap.direccion_lectura - VENTANA_DIRECCION)){
+			  pap.FLAG_SENTIDO = IZQUIERDA;
+			  pap.FLAG_DIRECCION = true;
+		  }
+		  if (pap.FLAG_SENTIDO){
+			  DIRECCION_HORARIA; 
+		  } else {
+			  DIRECCION_ANTI;
+		  }
+	  }
+	  if ((pap.direccion_set <= (pap.direccion_lectura + VENTANA_DIRECCION)) && (pap.direccion_set >= (pap.direccion_lectura - VENTANA_DIRECCION))){
+		  //pap.FLAG_EN = false;
+		  pap.FLAG_DIRECCION = false;
+		  pap.pwm_direccion = 0;
+		  //BitOut_DIR_PWM_ClrVal();
+		  //DIRECCION_OFF;
+	  }
+	  //######## END DIRECCION
+	}
+	//FIN
+	  GetVelocidad(&motor_di);
+	  GetVelocidad(&motor_dd);
+	  GetVelocidad(&motor_td);
+	  GetVelocidad(&motor_ti);
+	  Get_Corriente();
+	  Get_Direccion(&pap);
 	  
 	  switch (ESTADO){	  
 	  case LA_VELOCIDAD:
 		  if (lectura_nueva){
 			  lectura_nueva = false;
 		  }
-		  break;
-		  
+		  break;		  
 	  case LC_REMOTO:
 		  if (lectura_nueva){
 			  Reset_PIDs(motor_di);
@@ -592,6 +679,13 @@ int main(void)
 	  
 	  //TX();
 	  if(cuenta_TX >= 100){
+		  TEXT_strcpy(serie.tx_buf,sizeof(serie.tx_buf),(unsigned char*)"Mdd:");
+		  TEXT_strcatNum16u(serie.tx_buf,sizeof(serie.tx_buf),(word)motor_dd.ms);
+		  TEXT_strcat(serie.tx_buf,sizeof(serie.tx_buf),(unsigned char*)" Edd:");
+		  TEXT_strcatNum32s(serie.tx_buf,sizeof(serie.tx_buf),motor_dd.error_RPM);
+		  TEXT_strcat(serie.tx_buf,sizeof(serie.tx_buf),(unsigned char*)" ");
+		  TEXT_strcatNum16u(serie.tx_buf,sizeof(serie.tx_buf),(word)cuenta_TX);
+		  /*
 		  TEXT_strcpy(serie.tx_buf,sizeof(serie.tx_buf),(unsigned char*)"Mdd-");
 		  TEXT_strcatNum16u(serie.tx_buf,sizeof(serie.tx_buf),(word)motor_dd.ms);
 		  TEXT_strcat(serie.tx_buf,sizeof(serie.tx_buf),(unsigned char*)" Mdi-");
@@ -602,6 +696,7 @@ int main(void)
 		  TEXT_strcatNum16u(serie.tx_buf,sizeof(serie.tx_buf),(word)motor_ti.ms);
 		  TEXT_strcat(serie.tx_buf,sizeof(serie.tx_buf),(unsigned char*)" ");
 		  TEXT_strcatNum16u(serie.tx_buf,sizeof(serie.tx_buf),(word)cuenta_TX);
+		  */
 		  TEXT_chcat(serie.tx_buf,sizeof(serie.tx_buf),'\r');
 		  TEXT_chcat(serie.tx_buf,sizeof(serie.tx_buf),'\n');
 		  NumeroFin(&serie);	  

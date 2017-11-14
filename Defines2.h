@@ -70,8 +70,11 @@
 #define ADC_MIN					0
 #define ADC_MAX					3300
 #define BIT_16					65400
-#define GET_VEL(x)				(((x<<1)*1000*10)/FREQ_INPUT)
+#define GET_VEL(x)				(((x<<1)*1000*10)/FREQ_INPUT) //BOTH EDGE
+//#define GET_VEL(x)				(((x)*1000*10)/FREQ_INPUT) //rising EDGE
 #define GET_RECEP(x)			(((x)*10000*10)/FREQ_RECEPTOR)
+#define RISING					0
+#define FALLING					1
 
 #define MAX16BIT				65535
 #define MIN16BIT				0

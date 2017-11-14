@@ -35,6 +35,7 @@ void GetVelocidad (MOTOR *motor_x){
 	if (motor_x->cuenta_vel_cero >= RESET_VELOCIDAD_MS){	//un pulso, se pone vel en cero										
 		motor_x->FLAG_TIEMPO = false;
 		motor_x->ms = 0;
+		motor_x->ms_ant = 0;
 		motor_x->rpm = 0;
 		motor_x->cuenta_vel_cero = 0;
 		motor_x->Input.indices = 0;

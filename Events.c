@@ -112,15 +112,36 @@ extern SERIE serie;
 */
 void Input_Encoder_DI_OnCapture(void)
 {
+	/*
+	motor_di.Input.err = Input_Encoder_DI_GetCaptureValue(&motor_di.Input.datos[motor_di.Input.indices]);
+	motor_di.Input.indices++;
 	if (motor_di.Input.indices == 2){
 		motor_di.Input.periodo = motor_di.Input.datos[1] - motor_di.Input.datos[0];
-		motor_di.Input.indices = 0;
+		motor_di.Input.datos[0] = motor_di.Input.datos[1];
+		motor_di.Input.indices = 1;
 		motor_di.FLAG_TIEMPO = 1;
 		motor_di.posicion_pulsos++;
 		motor_di.cuenta_vel_cero = 0;
 	}
+	*/
+	LDD_TDeviceData *DeviceDataPtr;
+	
 	motor_di.Input.err = Input_Encoder_DI_GetCaptureValue(&motor_di.Input.datos[motor_di.Input.indices]);
 	motor_di.Input.indices++;
+	if (motor_di.Input.indices == 2){
+		motor_di.Input.periodo = motor_di.Input.datos[1] - motor_di.Input.datos[0];
+		motor_di.Input.datos[0] = motor_di.Input.datos[1];
+		motor_di.Input.indices = 1;
+		motor_di.FLAG_TIEMPO = 1;
+		motor_di.posicion_pulsos++;
+		motor_di.cuenta_vel_cero = 0;
+	}
+	if (motor_di.Input.edge == RISING){//RISING
+		TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_di.Input.nro, EDGE_FALLING);
+	}
+	if (motor_di.Input.edge == FALLING){//FALLING
+		TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_di.Input.nro, EDGE_RISING);
+	}
   /* Write your code here ... */
 }
 
@@ -175,10 +196,8 @@ void Btn_SW1_OnInterrupt(void)
 */
 void IntTiempo_OnInterrupt(void)
 {
-	byte i;
-	
+	byte i;	
 	cnt_aux++;
-	cuenta_EMERGENCIA++;
 	cuenta_RECIBIR++;
 	cuenta_ENVIAR++;
 	cuenta_PID++;
@@ -230,15 +249,39 @@ void Cpu_OnNMI(void)
 void Input_Encoder_DD_OnCapture(void)
 {
   /* Write your code here ... */
+	//(void)TPulsos_SelectCaptureEdge(DeviceDataPrv->LinkedDeviceDataPtr, CHANNEL, DeviceDataPrv->Edge); /* Enable capture */
+	
+	motor_dd.Input.err = Input_Encoder_DD_GetCaptureValue(&motor_dd.Input.datos[motor_dd.Input.indices]);
+	motor_dd.Input.indices++;
 	if (motor_dd.Input.indices == 2){
 		motor_dd.Input.periodo = motor_dd.Input.datos[1] - motor_dd.Input.datos[0];
-		motor_dd.Input.indices = 0;
+		motor_dd.Input.datos[0] = motor_dd.Input.datos[1];
+		motor_dd.Input.indices = 1;
 		motor_dd.FLAG_TIEMPO = 1;
 		motor_dd.posicion_pulsos++;
 		motor_dd.cuenta_vel_cero = 0;
 	}
+	
+	/*
+	LDD_TDeviceData *DeviceDataPtr;
+	
 	motor_dd.Input.err = Input_Encoder_DD_GetCaptureValue(&motor_dd.Input.datos[motor_dd.Input.indices]);
 	motor_dd.Input.indices++;
+	if (motor_dd.Input.indices == 2){
+		motor_dd.Input.periodo = motor_dd.Input.datos[1] - motor_dd.Input.datos[0];
+		motor_dd.Input.datos[0] = motor_dd.Input.datos[1];
+		motor_dd.Input.indices = 1;
+		motor_dd.FLAG_TIEMPO = 1;
+		motor_dd.posicion_pulsos++;
+		motor_dd.cuenta_vel_cero = 0;
+	}
+	if (motor_dd.Input.edge == RISING){//RISING
+		TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_dd.Input.nro, EDGE_FALLING);
+	}
+	if (motor_dd.Input.edge == FALLING){//FALLING
+		TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_dd.Input.nro, EDGE_RISING);
+	}
+	*/
 }
 
 /*
@@ -257,16 +300,36 @@ void Input_Encoder_DD_OnCapture(void)
 */
 void Input_Encoder_TD_OnCapture(void)
 {
-  /* Write your code here ... */
+	/*
+	motor_td.Input.err = Input_Encoder_TD_GetCaptureValue(&motor_td.Input.datos[motor_td.Input.indices]);
+	motor_td.Input.indices++;
 	if (motor_td.Input.indices == 2){
 		motor_td.Input.periodo = motor_td.Input.datos[1] - motor_td.Input.datos[0];
-		motor_td.Input.indices = 0;
+		motor_td.Input.datos[0] = motor_td.Input.datos[1];
+		motor_td.Input.indices = 1;
 		motor_td.FLAG_TIEMPO = 1;
 		motor_td.posicion_pulsos++;
 		motor_td.cuenta_vel_cero = 0;
 	}
+	*/
+	LDD_TDeviceData *DeviceDataPtr;
+	
 	motor_td.Input.err = Input_Encoder_TD_GetCaptureValue(&motor_td.Input.datos[motor_td.Input.indices]);
 	motor_td.Input.indices++;
+	if (motor_td.Input.indices == 2){
+		motor_td.Input.periodo = motor_td.Input.datos[1] - motor_td.Input.datos[0];
+		motor_td.Input.datos[0] = motor_td.Input.datos[1];
+		motor_td.Input.indices = 1;
+		motor_td.FLAG_TIEMPO = 1;
+		motor_td.posicion_pulsos++;
+		motor_td.cuenta_vel_cero = 0;
+	}
+	if (motor_td.Input.edge == RISING){//RISING
+		TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_td.Input.nro, EDGE_FALLING);
+	}
+	if (motor_td.Input.edge == FALLING){//FALLING
+		TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_td.Input.nro, EDGE_RISING);
+	}
 }
 
 /*
@@ -285,16 +348,36 @@ void Input_Encoder_TD_OnCapture(void)
 */
 void Input_Encoder_TI_OnCapture(void)
 {
-  /* Write your code here ... */
+	/*
+	motor_ti.Input.err = Input_Encoder_TI_GetCaptureValue(&motor_ti.Input.datos[motor_ti.Input.indices]);
+	motor_ti.Input.indices++;
 	if (motor_ti.Input.indices == 2){
 		motor_ti.Input.periodo = motor_ti.Input.datos[1] - motor_ti.Input.datos[0];
-		motor_ti.Input.indices = 0;
+		motor_ti.Input.datos[0] = motor_ti.Input.datos[1];
+		motor_ti.Input.indices = 1;
 		motor_ti.FLAG_TIEMPO = 1;
 		motor_ti.posicion_pulsos++;
 		motor_ti.cuenta_vel_cero = 0;
 	}
+	*/
+	LDD_TDeviceData *DeviceDataPtr;
+	
 	motor_ti.Input.err = Input_Encoder_TI_GetCaptureValue(&motor_ti.Input.datos[motor_ti.Input.indices]);
 	motor_ti.Input.indices++;
+	if (motor_ti.Input.indices == 2){
+		motor_ti.Input.periodo = motor_ti.Input.datos[1] - motor_ti.Input.datos[0];
+		motor_ti.Input.datos[0] = motor_ti.Input.datos[1];
+		motor_ti.Input.indices = 1;
+		motor_ti.FLAG_TIEMPO = 1;
+		motor_ti.posicion_pulsos++;
+		motor_ti.cuenta_vel_cero = 0;
+	}
+	if (motor_ti.Input.edge == RISING){//RISING
+		TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_ti.Input.nro, EDGE_FALLING);
+	}
+	if (motor_ti.Input.edge == FALLING){//FALLING
+		TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_ti.Input.nro, EDGE_RISING);
+	}
 }
 
 /*
@@ -571,6 +654,7 @@ void UART_MODBUS_OnTxComplete(void)
 void Btn_Emergencia_OnInterrupt(void)
 {
   /* Write your code here ... */
+	BitLed_Verde_ClrVal();
 	while(Btn_Emergencia_GetVal()){
 		ESTADO = PERDIDA_SENAL;
 		Reset_PIDs(motor_di);
@@ -581,10 +665,7 @@ void Btn_Emergencia_OnInterrupt(void)
 		motor_dd.tension = 0;
 		motor_ti.tension = 0;
 		motor_td.tension = 0;
-		cuenta_EMERGENCIA = 0;
 	}
-	while(cuenta_EMERGENCIA <= 1000){}
-	cuenta_EMERGENCIA = 0;
 	while(Btn_Emergencia_GetVal()){
 		ESTADO = PERDIDA_SENAL;
 		Reset_PIDs(motor_di);
@@ -595,9 +676,8 @@ void Btn_Emergencia_OnInterrupt(void)
 		motor_dd.tension = 0;
 		motor_ti.tension = 0;
 		motor_td.tension = 0;
-		cuenta_EMERGENCIA = 0;
 	}
-	while(cuenta_EMERGENCIA <= 1000){}
+	BitLed_Verde_SetVal();
 }
 
 /* END Events */
