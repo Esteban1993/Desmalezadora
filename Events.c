@@ -112,7 +112,7 @@ extern SERIE serie;
 */
 void Input_Encoder_DI_OnCapture(void)
 {
-	/*
+	
 	motor_di.Input.err = Input_Encoder_DI_GetCaptureValue(&motor_di.Input.datos[motor_di.Input.indices]);
 	motor_di.Input.indices++;
 	if (motor_di.Input.indices == 2){
@@ -123,7 +123,7 @@ void Input_Encoder_DI_OnCapture(void)
 		motor_di.posicion_pulsos++;
 		motor_di.cuenta_vel_cero = 0;
 	}
-	*/
+	/*
 	LDD_TDeviceData *DeviceDataPtr;
 	
 	motor_di.Input.err = Input_Encoder_DI_GetCaptureValue(&motor_di.Input.datos[motor_di.Input.indices]);
@@ -142,6 +142,7 @@ void Input_Encoder_DI_OnCapture(void)
 	if (motor_di.Input.edge == FALLING){//FALLING
 		TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_di.Input.nro, EDGE_RISING);
 	}
+	*/
   /* Write your code here ... */
 }
 
@@ -300,7 +301,7 @@ void Input_Encoder_DD_OnCapture(void)
 */
 void Input_Encoder_TD_OnCapture(void)
 {
-	/*
+	
 	motor_td.Input.err = Input_Encoder_TD_GetCaptureValue(&motor_td.Input.datos[motor_td.Input.indices]);
 	motor_td.Input.indices++;
 	if (motor_td.Input.indices == 2){
@@ -311,7 +312,8 @@ void Input_Encoder_TD_OnCapture(void)
 		motor_td.posicion_pulsos++;
 		motor_td.cuenta_vel_cero = 0;
 	}
-	*/
+	
+	/*
 	LDD_TDeviceData *DeviceDataPtr;
 	
 	motor_td.Input.err = Input_Encoder_TD_GetCaptureValue(&motor_td.Input.datos[motor_td.Input.indices]);
@@ -330,6 +332,7 @@ void Input_Encoder_TD_OnCapture(void)
 	if (motor_td.Input.edge == FALLING){//FALLING
 		TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_td.Input.nro, EDGE_RISING);
 	}
+	*/
 }
 
 /*
@@ -348,7 +351,7 @@ void Input_Encoder_TD_OnCapture(void)
 */
 void Input_Encoder_TI_OnCapture(void)
 {
-	/*
+	
 	motor_ti.Input.err = Input_Encoder_TI_GetCaptureValue(&motor_ti.Input.datos[motor_ti.Input.indices]);
 	motor_ti.Input.indices++;
 	if (motor_ti.Input.indices == 2){
@@ -359,7 +362,8 @@ void Input_Encoder_TI_OnCapture(void)
 		motor_ti.posicion_pulsos++;
 		motor_ti.cuenta_vel_cero = 0;
 	}
-	*/
+	
+	/*
 	LDD_TDeviceData *DeviceDataPtr;
 	
 	motor_ti.Input.err = Input_Encoder_TI_GetCaptureValue(&motor_ti.Input.datos[motor_ti.Input.indices]);
@@ -378,6 +382,7 @@ void Input_Encoder_TI_OnCapture(void)
 	if (motor_ti.Input.edge == FALLING){//FALLING
 		TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_ti.Input.nro, EDGE_RISING);
 	}
+	*/
 }
 
 /*

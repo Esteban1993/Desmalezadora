@@ -104,6 +104,14 @@
 #include "BitIoLdd15.h"
 #include "Btn_Emergencia.h"
 #include "ExtIntLdd2.h"
+#include "Encoder_DD.h"
+#include "BitIoLdd16.h"
+#include "Encoder_DI.h"
+#include "BitIoLdd17.h"
+#include "Encoder_TD.h"
+#include "BitIoLdd18.h"
+#include "Encoder_TI.h"
+#include "BitIoLdd19.h"
 /* Including shared modules, which are used for whole project */
 #include "PE_Types.h"
 #include "PE_Error.h"
@@ -234,7 +242,7 @@ int main(void)
   pap.FLAG_HABILITADO = false;
   pap.FLAG_EN = true;
   for(;;){
-	  while(true){
+	  while(false){
 	  motor_di.tension = tension_global;
 	  motor_dd.tension = tension_global;
 	  motor_td.tension = tension_global;

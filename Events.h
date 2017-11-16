@@ -116,6 +116,14 @@
 #include "BitIoLdd15.h"
 #include "Btn_Emergencia.h"
 #include "ExtIntLdd2.h"
+#include "Encoder_DD.h"
+#include "BitIoLdd16.h"
+#include "Encoder_DI.h"
+#include "BitIoLdd17.h"
+#include "Encoder_TD.h"
+#include "BitIoLdd18.h"
+#include "Encoder_TI.h"
+#include "BitIoLdd19.h"
 
 #ifdef __cplusplus
 extern "C" {
