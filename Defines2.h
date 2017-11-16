@@ -31,7 +31,7 @@
 
 #define PERDIDA_REMOTO			1000	//ms que deben pasar para definir la perdida de la señal REMOTO
 #define CUENTAS_REMOTO			100		//Limite para definir el ancho del pulso CALIBRADO
-#define RESET_VELOCIDAD_MS		600
+#define RESET_VELOCIDAD_MS		300
 #define	VELOCIDAD				0
 #define	DIRECCION				1
 #define REMOTO_ANCHO_PULSO		28		//Desplazamiento MINIMO del ancho del pulso REMOTO x10us

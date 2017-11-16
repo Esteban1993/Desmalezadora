@@ -209,6 +209,7 @@ int main(void)
 {
 	byte i;
 	byte x;
+	//LDD_TDeviceData *DeviceDataPtr;
 	
 
   /* Write your local variable definition here */
@@ -241,7 +242,7 @@ int main(void)
   lectura_nueva = true;
   pap.FLAG_HABILITADO = false;
   pap.FLAG_EN = true;
-  TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_dd.Input.nro, EDGE_RISING); //DSDASDASDASDASDASDASD
+  //TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_dd.Input.nro, EDGE_RISING); //DSDASDASDASDASDASDASD
   for(;;){
 	  while(true){
 		  GetVelocidad(&motor_dd);
@@ -260,9 +261,9 @@ int main(void)
 							  motor_dd.cuenta_vel_cero = 0;
 						  }
 						  motor_dd.Input.edge = FALLING;
-						  TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_dd.Input.nro, EDGE_FALLING);
+						  //TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_dd.Input.nro, EDGE_FALLING);
 					  }
-				  } else {
+				  } else { //CUANDO ES FALLING
 					  if (!Encoder_DD_GetVal()){
 						  motor_dd.Input.datos[motor_dd.Input.indices] = motor_dd.Input.aux;
 						  motor_dd.Input.indices++;
@@ -275,15 +276,64 @@ int main(void)
 							  motor_dd.cuenta_vel_cero = 0;
 						  }
 						  motor_dd.Input.edge = RISING;
-						  TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_dd.Input.nro, EDGE_RISING);
+						  //TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_dd.Input.nro, EDGE_RISING);
 					  }
 				  }
 				  motor_dd.Input.FLAG_E = false;
-				  
 			  }
 		  }
 		  Tension2Duty(&motor_dd);
 		  SetDuty(motor_dd);
+
+		  if(cuenta_TX >= 100){
+			  TEXT_strcpy(serie.tx_buf,sizeof(serie.tx_buf),(unsigned char*)"Mdd-");
+			  TEXT_strcatNum16u(serie.tx_buf,sizeof(serie.tx_buf),(word)motor_dd.ms);
+			  TEXT_chcat(serie.tx_buf,sizeof(serie.tx_buf),'\r');
+			  TEXT_chcat(serie.tx_buf,sizeof(serie.tx_buf),'\n');
+			  NumeroFin(&serie);		  
+			  cuenta_TX -= 100;
+			  serie.FLAG_TX = true;
+		  }
+		  if (cnt_aux >= 500){
+			  cnt_aux -= 100;
+			  BitLed_Azul_NegVal();
+			  Status_LED_NegVal();
+		  }
+		  TXS(&serie);
+		  //####### DIRECCION
+		  Get_Direccion(&pap);					//LEER DIRECCION
+		  pap.FLAG_HABILITADO = true;
+		  if (pap.FLAG_HABILITADO){
+			  pap.FLAG_HABILITADO = false;
+			  if (pap.FLAG_EN){
+				  DIRECCION_ON;
+			  } else {
+				  DIRECCION_OFF;
+			  }
+			  pap.direccion_set = (pap.direccion_set >= LIMITE_DIRECCION_DERECHO) ? LIMITE_DIRECCION_DERECHO : pap.direccion_set;
+			  pap.direccion_set = (pap.direccion_set <= LIMITE_DIRECCION_IZQUIERDO) ? LIMITE_DIRECCION_IZQUIERDO : pap.direccion_set;
+			  if (pap.direccion_set > (pap.direccion_lectura + VENTANA_DIRECCION)){
+				  pap.FLAG_SENTIDO = DERECHA;
+				  pap.FLAG_DIRECCION = true;
+			  }
+			  if (pap.direccion_set < (pap.direccion_lectura - VENTANA_DIRECCION)){
+				  pap.FLAG_SENTIDO = IZQUIERDA;
+				  pap.FLAG_DIRECCION = true;
+			  }
+			  if (pap.FLAG_SENTIDO){
+				  DIRECCION_HORARIA; 
+			  } else {
+				  DIRECCION_ANTI;
+			  }
+		  }
+		  if ((pap.direccion_set <= (pap.direccion_lectura + VENTANA_DIRECCION)) && (pap.direccion_set >= (pap.direccion_lectura - VENTANA_DIRECCION))){
+			  //pap.FLAG_EN = false;
+			  pap.FLAG_DIRECCION = false;
+			  pap.pwm_direccion = 0;
+			  //BitOut_DIR_PWM_ClrVal();
+			  //DIRECCION_OFF;
+		  }
+		  //######## END DIRECCION
 	  }
 	  while(false){
 	  motor_di.tension = tension_global;

@@ -207,7 +207,7 @@ void IntTiempo_OnInterrupt(void)
 	motor_dd.cuenta_vel_cero += 1;
 	motor_ti.cuenta_vel_cero += 1;
 	motor_td.cuenta_vel_cero += 1;
-	motor_dd.Input.tiempo = (motor_dd.Input.FLAG_E) ? motor_dd.Input.tiempo++ : 0;	//CUENTO SI BANDERA PULSO
+	motor_dd.Input.tiempo = (motor_dd.Input.FLAG_E) ? ++motor_dd.Input.tiempo : 0;	//CUENTO SI BANDERA PULSO
 	if (ESTADO == CALIBRACION || ESTADO == LC_REMOTO || ESTADO == LA_REMOTO){
 		velocidad.perdida_senal_remoto++;
 		direccion.perdida_senal_remoto++;
