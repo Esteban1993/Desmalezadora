@@ -111,38 +111,37 @@ extern SERIE serie;
 ** ===================================================================
 */
 void Input_Encoder_DI_OnCapture(void)
-{
-	
-	motor_di.Input.err = Input_Encoder_DI_GetCaptureValue(&motor_di.Input.datos[motor_di.Input.indices]);
-	motor_di.Input.indices++;
-	if (motor_di.Input.indices == 2){
-		motor_di.Input.periodo = motor_di.Input.datos[1] - motor_di.Input.datos[0];
-		motor_di.Input.datos[0] = motor_di.Input.datos[1];
-		motor_di.Input.indices = 1;
-		motor_di.FLAG_TIEMPO = 1;
-		motor_di.posicion_pulsos++;
-		motor_di.cuenta_vel_cero = 0;
-	}
-	/*
-	LDD_TDeviceData *DeviceDataPtr;
-	
-	motor_di.Input.err = Input_Encoder_DI_GetCaptureValue(&motor_di.Input.datos[motor_di.Input.indices]);
-	motor_di.Input.indices++;
-	if (motor_di.Input.indices == 2){
-		motor_di.Input.periodo = motor_di.Input.datos[1] - motor_di.Input.datos[0];
-		motor_di.Input.datos[0] = motor_di.Input.datos[1];
-		motor_di.Input.indices = 1;
-		motor_di.FLAG_TIEMPO = 1;
-		motor_di.posicion_pulsos++;
-		motor_di.cuenta_vel_cero = 0;
-	}
-	if (motor_di.Input.edge == RISING){//RISING
-		TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_di.Input.nro, EDGE_FALLING);
-	}
-	if (motor_di.Input.edge == FALLING){//FALLING
-		TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_di.Input.nro, EDGE_RISING);
-	}
-	*/
+{		
+		motor_di.Input.err = Input_Encoder_DI_GetCaptureValue(&motor_di.Input.datos[motor_di.Input.indices]);
+		motor_di.Input.indices++;
+		if (motor_di.Input.indices == 2){
+			motor_di.Input.periodo = motor_di.Input.datos[1] - motor_di.Input.datos[0];
+			motor_di.Input.datos[0] = motor_di.Input.datos[1];
+			motor_di.Input.indices = 1;
+			motor_di.FLAG_TIEMPO = 1;
+			motor_di.posicion_pulsos++;
+			motor_di.cuenta_vel_cero = 0;
+		}
+		/*
+		LDD_TDeviceData *DeviceDataPtr;
+		
+		motor_di.Input.err = Input_Encoder_DI_GetCaptureValue(&motor_di.Input.datos[motor_di.Input.indices]);
+		motor_di.Input.indices++;
+		if (motor_di.Input.indices == 2){
+			motor_di.Input.periodo = motor_di.Input.datos[1] - motor_di.Input.datos[0];
+			motor_di.Input.datos[0] = motor_di.Input.datos[1];
+			motor_di.Input.indices = 1;
+			motor_di.FLAG_TIEMPO = 1;
+			motor_di.posicion_pulsos++;
+			motor_di.cuenta_vel_cero = 0;
+		}
+		if (motor_di.Input.edge == RISING){//RISING
+			TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_di.Input.nro, EDGE_FALLING);
+		}
+		if (motor_di.Input.edge == FALLING){//FALLING
+			TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_di.Input.nro, EDGE_RISING);
+		}		
+		*/
   /* Write your code here ... */
 }
 
@@ -208,6 +207,7 @@ void IntTiempo_OnInterrupt(void)
 	motor_dd.cuenta_vel_cero += 1;
 	motor_ti.cuenta_vel_cero += 1;
 	motor_td.cuenta_vel_cero += 1;
+	motor_dd.Input.tiempo = (motor_dd.Input.FLAG_E) ? motor_dd.Input.tiempo++ : 0;	//CUENTO SI BANDERA PULSO
 	if (ESTADO == CALIBRACION || ESTADO == LC_REMOTO || ESTADO == LA_REMOTO){
 		velocidad.perdida_senal_remoto++;
 		direccion.perdida_senal_remoto++;
@@ -250,8 +250,13 @@ void Cpu_OnNMI(void)
 void Input_Encoder_DD_OnCapture(void)
 {
   /* Write your code here ... */
+	if(!motor_dd.Input.FLAG_E){							//ESPERO PROCESAR VALOR
+		motor_dd.Input.err = Input_Encoder_DD_GetCaptureValue(&motor_dd.Input.aux);
+		motor_dd.Input.FLAG_E = TRUE;
+		motor_dd.Input.tiempo = 0;
+	}
 	//(void)TPulsos_SelectCaptureEdge(DeviceDataPrv->LinkedDeviceDataPtr, CHANNEL, DeviceDataPrv->Edge); /* Enable capture */
-	
+	/*
 	motor_dd.Input.err = Input_Encoder_DD_GetCaptureValue(&motor_dd.Input.datos[motor_dd.Input.indices]);
 	motor_dd.Input.indices++;
 	if (motor_dd.Input.indices == 2){
@@ -262,7 +267,7 @@ void Input_Encoder_DD_OnCapture(void)
 		motor_dd.posicion_pulsos++;
 		motor_dd.cuenta_vel_cero = 0;
 	}
-	
+	*/
 	/*
 	LDD_TDeviceData *DeviceDataPtr;
 	

@@ -52,6 +52,9 @@ typedef struct input_capture {
 	uint8 indices;					//Indice de pulsos
 	uint8 err;						//Por si ocurre un error al momento de leer pulsos
 	uint8 edge;						//Flanco en el que esta trabajando
+	uint16 aux;
+	uint8 FLAG_E
+	uint8 tiempo
 } INPUT_CAPTURE;
 
 typedef struct motor {

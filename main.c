@@ -185,10 +185,10 @@ word tension_global = 0;
 
 //######################NUEVO!
 
-MOTOR motor_di = {MOTOR_DI, {MOTOR_DI, {0, 0}, 0, 0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, K_PID, 0, TI_PID, 0, DUTY_CERO, 0};
-MOTOR motor_dd = {MOTOR_DD, {MOTOR_DD, {0, 0}, 0, 0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, K_PID, 0, TI_PID, 0, DUTY_CERO, 0};
-MOTOR motor_ti = {MOTOR_TI, {MOTOR_TI, {0, 0}, 0, 0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, K_PID, 0, TI_PID, 0, DUTY_CERO, 0};
-MOTOR motor_td = {MOTOR_TD, {MOTOR_TD, {0, 0}, 0, 0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, K_PID, 0, TI_PID, 0, DUTY_CERO, 0};
+MOTOR motor_di = {MOTOR_DI, {MOTOR_DI, {0, 0}, 0, 0, 0, RISING, 0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, K_PID, 0, TI_PID, 0, DUTY_CERO, 0};
+MOTOR motor_dd = {MOTOR_DD, {MOTOR_DD, {0, 0}, 0, 0, 0, RISING, 0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, K_PID, 0, TI_PID, 0, DUTY_CERO, 0};
+MOTOR motor_ti = {MOTOR_TI, {MOTOR_TI, {0, 0}, 0, 0, 0, RISING, 0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, K_PID, 0, TI_PID, 0, DUTY_CERO, 0};
+MOTOR motor_td = {MOTOR_TD, {MOTOR_TD, {0, 0}, 0, 0, 0, RISING, 0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, K_PID, 0, TI_PID, 0, DUTY_CERO, 0};
 
 MOTOR_TX tx_dd;
 
@@ -241,7 +241,50 @@ int main(void)
   lectura_nueva = true;
   pap.FLAG_HABILITADO = false;
   pap.FLAG_EN = true;
+  TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_dd.Input.nro, EDGE_RISING); //DSDASDASDASDASDASDASD
   for(;;){
+	  while(true){
+		  GetVelocidad(&motor_dd);
+		  if(motor_dd.Input.tiempo >= 2){						//ESPERO UN TIEMPO UNA VEZ RECIBIDO UN PULSO
+			  if (motor_dd.Input.FLAG_E){						//BANDERA DE UN PULSO
+				  if( motor_dd.Input.edge == RISING){
+					  if (Encoder_DD_GetVal()){
+						  motor_dd.Input.datos[motor_dd.Input.indices] = motor_dd.Input.aux;
+						  motor_dd.Input.indices++;
+						  if (motor_dd.Input.indices == 2){
+							  motor_dd.Input.periodo = motor_dd.Input.datos[1] - motor_dd.Input.datos[0];
+							  motor_dd.Input.datos[0] = motor_dd.Input.datos[1];
+							  motor_dd.Input.indices = 1;
+							  motor_dd.FLAG_TIEMPO = 1;
+							  motor_dd.posicion_pulsos++;
+							  motor_dd.cuenta_vel_cero = 0;
+						  }
+						  motor_dd.Input.edge = FALLING;
+						  TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_dd.Input.nro, EDGE_FALLING);
+					  }
+				  } else {
+					  if (!Encoder_DD_GetVal()){
+						  motor_dd.Input.datos[motor_dd.Input.indices] = motor_dd.Input.aux;
+						  motor_dd.Input.indices++;
+						  if (motor_dd.Input.indices == 2){
+							  motor_dd.Input.periodo = motor_dd.Input.datos[1] - motor_dd.Input.datos[0];
+							  motor_dd.Input.datos[0] = motor_dd.Input.datos[1];
+							  motor_dd.Input.indices = 1;
+							  motor_dd.FLAG_TIEMPO = 1;
+							  motor_dd.posicion_pulsos++;
+							  motor_dd.cuenta_vel_cero = 0;
+						  }
+						  motor_dd.Input.edge = RISING;
+						  TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_dd.Input.nro, EDGE_RISING);
+					  }
+				  }
+				  motor_dd.Input.FLAG_E = false;
+				  
+			  }
+		  }
+		  Tension2Duty(&motor_dd);
+		  SetDuty(motor_dd);
+	  }
 	  while(false){
 	  motor_di.tension = tension_global;
 	  motor_dd.tension = tension_global;
