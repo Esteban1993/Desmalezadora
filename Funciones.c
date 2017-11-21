@@ -172,3 +172,42 @@ void Motor2Send(SERIE *serie, MOTOR_TX *motor){
 		i++;
 	}
 }
+void GetEncoder(MOTOR *motor_x){
+	if(motor_x->Input.tiempo >= RETENCION_MS){						//ESPERO UN TIEMPO UNA VEZ RECIBIDO UN PULSO
+		  if (motor_x->Input.FLAG_E){						//BANDERA DE UN PULSO
+			  if( motor_x->Input.edge == RISING){
+				  if (Encoder_DD_GetVal()){
+					  motor_x->Input.datos[motor_x->Input.indices] = motor_x->Input.aux;
+					  motor_x->Input.indices++;
+					  if (motor_x->Input.indices == 2){
+						  motor_x->Input.periodo = motor_x->Input.datos[1] - motor_x->Input.datos[0];
+						  motor_x->Input.datos[0] = motor_x->Input.datos[1];
+						  motor_x->Input.indices = 1;
+						  motor_x->FLAG_TIEMPO = 1;
+						  motor_x->posicion_pulsos++;
+						  motor_x->cuenta_vel_cero = 0;
+					  }
+					  motor_x->Input.edge = FALLING;
+					  //TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_x->Input.nro, EDGE_FALLING);
+				  }
+			  } else { //CUANDO ES FALLING
+				  if (!Encoder_DD_GetVal()){
+					  motor_x->Input.datos[motor_x->Input.indices] = motor_x->Input.aux;
+					  motor_x->Input.indices++;
+					  if (motor_x->Input.indices == 2){
+						  motor_x->Input.periodo = motor_x->Input.datos[1] - motor_x->Input.datos[0];
+						  motor_x->Input.datos[0] = motor_x->Input.datos[1];
+						  motor_x->Input.indices = 1;
+						  motor_x->FLAG_TIEMPO = 1;
+						  motor_x->posicion_pulsos++;
+						  motor_x->cuenta_vel_cero = 0;
+					  }
+					  motor_x->Input.edge = RISING;
+					  //TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_x->Input.nro, EDGE_RISING);
+				  }
+			  }
+			  motor_x->Input.FLAG_E = false;
+		  }
+	}
+	
+}

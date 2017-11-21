@@ -11,6 +11,14 @@
 #include "Struct2.h"
 #include "Defines2.h"
 #include "PE_Types.h"
+#include "Encoder_DD.h"
+#include "BitIoLdd16.h"
+#include "Encoder_DI.h"
+#include "BitIoLdd17.h"
+#include "Encoder_TD.h"
+#include "BitIoLdd18.h"
+#include "Encoder_TI.h"
+#include "BitIoLdd19.h"
 /*
  * ######################## FUNCIONES ###############################
  *  * ######################## FUNCIONES ###############################
@@ -35,6 +43,7 @@ void RX (SERIE seriex, MOTOR *motordi, MOTOR *motordd, MOTOR *motortd, MOTOR *mo
 void NumeroFin(SERIE *serie_x);
 MOTOR_TX TX_Motor(MOTOR motor_x);
 void Motor2Send(SERIE *serie, MOTOR_TX *motor);
+void GetEncoder(MOTOR *motor_x);
 
 
 

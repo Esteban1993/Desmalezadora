@@ -75,6 +75,7 @@
 #define GET_RECEP(x)			(((x)*10000*10)/FREQ_RECEPTOR)
 #define RISING					0
 #define FALLING					1
+#define RETENCION_MS			2
 
 #define MAX16BIT				65535
 #define MIN16BIT				0
