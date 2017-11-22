@@ -159,6 +159,7 @@ byte FLAG_RECEPTOR[2];				//FLAG de ANCHO DE PULSO LEIDO REMOTO
 byte FLAG_ADC;						//FLAG de ADC TERMINO
 byte FLAG_RX;						//Hay datos para procesar RECIBIDOS
 byte FLAG_TX;						//Hay datos para procesar ENVIAR
+byte FLAG_RETROCESO;
 
 // DIRECCION PWM
 byte pwm_direccion;					//Contador para el PWM Manual
@@ -169,6 +170,8 @@ word pwm_pasos;						//Cantidad de PASOS que se ha dado
 
 bool lectura_nueva;				//Cuando se cambia de estado, sirve para ejecutar 
 								//	una porcion de codigo por unica vez
+
+uint16 emergencias = 0;				//Cuenta las entradas a emergencia
 
 word RPM_SET;					//Setpoint RPM Global
 bool sentido_ant;				//Sentido anterior de GIRO MOTOR 			1-REVERSA
@@ -244,13 +247,131 @@ int main(void)
   pap.FLAG_EN = true;
   //TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_dd.Input.nro, EDGE_RISING); //DSDASDASDASDASDASDASD
   for(;;){
+	  while(ESTADO != LC_REMOTO){
+		  Get_Remoto(&velocidad);
+		  Get_Remoto(&direccion);
+		  if (velocidad.ms != 0 || direccion.ms != 0 || !lectura_nueva){
+			  lectura_nueva = false;
+		  
+			  if (velocidad.ms == velocidad.remoto_cero){
+				  velocidad.cuenta_remoto++;			  
+			  } else {
+				  velocidad.remoto_cero = velocidad.ms;
+				  velocidad.cuenta_remoto = 0;
+			  }
+			  if (direccion.ms == direccion.remoto_cero){
+				  direccion.cuenta_remoto++;
+			  } else {
+				  direccion.remoto_cero = direccion.ms;
+				  direccion.cuenta_remoto = 0;
+			  }		  
+			  if (velocidad.cuenta_remoto >= CUENTAS_REMOTO && direccion.cuenta_remoto >= CUENTAS_REMOTO){
+				  ESTADO = LC_REMOTO;
+				  lectura_nueva = true;
+			  }
+			  if (velocidad.perdida_senal_remoto >= 500 || direccion.perdida_senal_remoto >= 500){
+				  velocidad.perdida_senal_remoto = 0;
+				  velocidad.cuenta_remoto = 0;
+				  direccion.perdida_senal_remoto = 0;
+				  direccion.cuenta_remoto = 0;
+			  }
+		  }
+		  
+	  }
 	  while(true){
-		  GetEncoder(&motor_dd);
-		  GetVelocidad(&motor_dd);		  
-		  Tension2Duty(&motor_dd);
-		  SetDuty(motor_dd);
-		  //####### DIRECCION
+
 		  Get_Direccion(&pap);					//LEER DIRECCION
+		  Get_Remoto(&velocidad);
+		  Get_Remoto(&direccion);
+		  GetEncoder(&motor_dd);
+		  GetEncoder(&motor_di);
+		  GetEncoder(&motor_td);
+		  GetEncoder(&motor_ti);
+		  GetVelocidad(&motor_dd);
+		  GetVelocidad(&motor_di);
+		  GetVelocidad(&motor_td);
+		  GetVelocidad(&motor_ti);
+		  
+		  if (cuenta_PID >= MUESTREO_PID){ //100 milisegundos periodo de muestreo
+			  cuenta_PID = 0;
+			  motor_di.RPM_set = RPM_SET;
+			  motor_dd.RPM_set = RPM_SET;
+			  motor_ti.RPM_set = RPM_SET;
+			  motor_td.RPM_set = RPM_SET;
+			  if (RPM_SET != 0){
+				  Error_PID(&motor_dd);
+				  Error_PID(&motor_di);
+				  Error_PID(&motor_td);
+				  Error_PID(&motor_ti);
+				  CtrlPID_DD_Control(motor_dd.error_RPM,&motor_dd.control);
+				  CtrlPID_DI_Control(motor_di.error_RPM,&motor_di.control);
+				  CtrlPID_TD_Control(motor_td.error_RPM,&motor_td.control);
+				  CtrlPID_TI_Control(motor_ti.error_RPM,&motor_ti.control);
+				  RPM_Cero(&motor_dd);	//RPM_SET = 0?
+				  RPM_Cero(&motor_di);
+				  RPM_Cero(&motor_td);
+				  RPM_Cero(&motor_ti);
+				  motor_dd.tension = motor_dd.control;
+				  motor_di.tension = motor_di.control;
+				  motor_td.tension = motor_td.control;
+				  motor_ti.tension = motor_ti.control;
+			  } else {
+				  Reset_PIDs(motor_di);
+				  Reset_PIDs(motor_dd);
+				  Reset_PIDs(motor_ti);
+				  Reset_PIDs(motor_td);
+				  motor_dd.control = 0;
+				  motor_di.control = 0;
+				  motor_td.control = 0;
+				  motor_ti.control = 0;				  
+				  motor_dd.tension = motor_dd.control;
+				  motor_di.tension = motor_di.control;
+				  motor_td.tension = motor_td.control;
+				  motor_ti.tension = motor_ti.control;
+			  }
+		  }
+		  
+		  if (sentido_act != sentido_ant){
+			  if (Vel_Cero(motor_di,motor_dd,motor_td,motor_ti)){
+				  sentido_ant = sentido_act;
+				  Out_Reversa_PutVal(sentido_act);
+				  cuenta_PID = 0;
+				  Reset_PIDs(motor_di);
+				  Reset_PIDs(motor_dd);
+				  Reset_PIDs(motor_ti);
+				  Reset_PIDs(motor_td);
+				  motor_dd.control = 0;
+				  motor_di.control = 0;
+				  motor_td.control = 0;
+				  motor_ti.control = 0;				  
+				  motor_dd.tension = motor_dd.control;
+				  motor_di.tension = motor_di.control;
+				  motor_td.tension = motor_td.control;
+				  motor_ti.tension = motor_ti.control;
+				  //-
+			  } else {
+				  velocidad.ms = velocidad.remoto_cero; //PONE RPM_SET EN CERO
+			  }
+		  }
+		  //motor_di.tension = tension_global;
+		  //motor_dd.tension = tension_global;
+		  //motor_td.tension = tension_global;
+		  //motor_ti.tension = tension_global;
+		  Tension2Duty(&motor_di);
+		  Tension2Duty(&motor_dd);
+		  Tension2Duty(&motor_td);
+		  Tension2Duty(&motor_ti);
+		  SetDuty(motor_dd);
+		  SetDuty(motor_di);
+		  SetDuty(motor_td);
+		  SetDuty(motor_ti);
+		  
+		  //LEER DIRECCION
+		  direccion.ms = (direccion.ms >= direccion.remoto_cero + REMOTO_ANCHO_PULSO) ? direccion.remoto_cero + REMOTO_ANCHO_PULSO : direccion.ms;
+		  direccion.ms = (direccion.ms <= direccion.remoto_cero - REMOTO_ANCHO_PULSO) ? direccion.remoto_cero - REMOTO_ANCHO_PULSO : direccion.ms;
+		  pap.direccion_set = Mapeo(direccion.ms,direccion.remoto_cero - REMOTO_ANCHO_PULSO,direccion.remoto_cero + REMOTO_ANCHO_PULSO,LIMITE_DIRECCION_IZQUIERDO,LIMITE_DIRECCION_DERECHO);
+		  //END LEER DIRECCION		  
+		  //####### DIRECCION
 		  pap.FLAG_HABILITADO = true;
 		  if (pap.FLAG_HABILITADO){
 			  pap.FLAG_HABILITADO = false;
@@ -286,7 +407,17 @@ int main(void)
 		  
 		  if(cuenta_TX >= 100){
 			  TEXT_strcpy(serie.tx_buf,sizeof(serie.tx_buf),(unsigned char*)"Mdd-");
-			  TEXT_strcatNum16u(serie.tx_buf,sizeof(serie.tx_buf),(word)motor_dd.ms);
+			  TEXT_strcatNum16u(serie.tx_buf,sizeof(serie.tx_buf),(word)motor_dd.ms);	  
+			  TEXT_strcat(serie.tx_buf,sizeof(serie.tx_buf),(unsigned char*)" Mdi-");
+			  TEXT_strcatNum16u(serie.tx_buf,sizeof(serie.tx_buf),(word)motor_di.ms);
+			  TEXT_strcat(serie.tx_buf,sizeof(serie.tx_buf),(unsigned char*)" Mtd-");
+			  TEXT_strcatNum16u(serie.tx_buf,sizeof(serie.tx_buf),(word)motor_td.ms);
+			  TEXT_strcat(serie.tx_buf,sizeof(serie.tx_buf),(unsigned char*)" Mti-");
+			  TEXT_strcatNum16u(serie.tx_buf,sizeof(serie.tx_buf),(word)motor_ti.ms);
+			  TEXT_strcat(serie.tx_buf,sizeof(serie.tx_buf),(unsigned char*)" Vel-");
+			  TEXT_strcatNum16u(serie.tx_buf,sizeof(serie.tx_buf),(word)velocidad.ms);
+			  TEXT_strcat(serie.tx_buf,sizeof(serie.tx_buf),(unsigned char*)" Dir-");
+			  TEXT_strcatNum16u(serie.tx_buf,sizeof(serie.tx_buf),(word)direccion.ms);
 			  TEXT_chcat(serie.tx_buf,sizeof(serie.tx_buf),'\r');
 			  TEXT_chcat(serie.tx_buf,sizeof(serie.tx_buf),'\n');
 			  NumeroFin(&serie);		  
@@ -300,100 +431,17 @@ int main(void)
 		  }
 		  TXS(&serie);
 	  }
-	  while(false){
-	  motor_di.tension = tension_global;
-	  motor_dd.tension = tension_global;
-	  motor_td.tension = tension_global;
-	  motor_ti.tension = tension_global;
-	  Tension2Duty(&motor_di);
-	  Tension2Duty(&motor_dd);
-	  Tension2Duty(&motor_td);
-	  Tension2Duty(&motor_ti);
-	  SetDuty(motor_di);
-	  SetDuty(motor_dd);
-	  SetDuty(motor_td);
-	  SetDuty(motor_ti);
+	  
 	  Get_Direccion(&pap);					//LEER DIRECCION
 	  
-	  if(cuenta_TX >= 100){
-		  TEXT_strcpy(serie.tx_buf,sizeof(serie.tx_buf),(unsigned char*)"Mdd-");
-		  TEXT_strcatNum16u(serie.tx_buf,sizeof(serie.tx_buf),(word)motor_dd.ms);
-		  /*	  
-		  TEXT_strcat(serie.tx_buf,sizeof(serie.tx_buf),(unsigned char*)" Mdi-");
-		  TEXT_strcatNum16u(serie.tx_buf,sizeof(serie.tx_buf),(word)motor_di.ms);
-		  TEXT_strcat(serie.tx_buf,sizeof(serie.tx_buf),(unsigned char*)" Mtd-");
-		  TEXT_strcatNum16u(serie.tx_buf,sizeof(serie.tx_buf),(word)motor_td.ms);
-		  TEXT_strcat(serie.tx_buf,sizeof(serie.tx_buf),(unsigned char*)" Mti-");
-		  TEXT_strcatNum16u(serie.tx_buf,sizeof(serie.tx_buf),(word)motor_ti.ms);
-		  TEXT_strcat(serie.tx_buf,sizeof(serie.tx_buf),(unsigned char*)" ");
-		  TEXT_strcatNum16u(serie.tx_buf,sizeof(serie.tx_buf),(word)cuenta_TX);
-		  */
-		  TEXT_chcat(serie.tx_buf,sizeof(serie.tx_buf),'\r');
-		  TEXT_chcat(serie.tx_buf,sizeof(serie.tx_buf),'\n');
-		  NumeroFin(&serie);
-		  /*
-		  tx_dd = TX_Motor(motor_dd);
-		  Motor2Send(&serie,&tx_dd);
-		  serie.tx_buf[serie.tx_next] = '\r';
-		  inc(serie.tx_next);
-		  serie.tx_buf[serie.tx_next] = '\n';
-		  inc(serie.tx_next);
-		  */			  
-		  cuenta_TX -= 100;
-		  serie.FLAG_TX = true;
-	  }
-	  GetVelocidad(&motor_di);
+	  GetEncoder(&motor_dd);
+	  GetEncoder(&motor_di);
+	  GetEncoder(&motor_td);
+	  GetEncoder(&motor_ti);
 	  GetVelocidad(&motor_dd);
+	  GetVelocidad(&motor_di);
 	  GetVelocidad(&motor_td);
 	  GetVelocidad(&motor_ti);
-	  Get_Corriente();
-	  if (cnt_aux >= 100){
-		  cnt_aux -= 100;
-		  BitLed_Azul_NegVal();
-		  Status_LED_NegVal();
-	  }
-	  TXS(&serie);
-	  //####### DIRECCION
-	  pap.FLAG_HABILITADO = true;
-	  if (pap.FLAG_HABILITADO){
-		  pap.FLAG_HABILITADO = false;
-		  if (pap.FLAG_EN){
-			  DIRECCION_ON;
-		  } else {
-			  DIRECCION_OFF;
-		  }
-		  pap.direccion_set = (pap.direccion_set >= LIMITE_DIRECCION_DERECHO) ? LIMITE_DIRECCION_DERECHO : pap.direccion_set;
-		  pap.direccion_set = (pap.direccion_set <= LIMITE_DIRECCION_IZQUIERDO) ? LIMITE_DIRECCION_IZQUIERDO : pap.direccion_set;
-		  if (pap.direccion_set > (pap.direccion_lectura + VENTANA_DIRECCION)){
-			  pap.FLAG_SENTIDO = DERECHA;
-			  pap.FLAG_DIRECCION = true;
-		  }
-		  if (pap.direccion_set < (pap.direccion_lectura - VENTANA_DIRECCION)){
-			  pap.FLAG_SENTIDO = IZQUIERDA;
-			  pap.FLAG_DIRECCION = true;
-		  }
-		  if (pap.FLAG_SENTIDO){
-			  DIRECCION_HORARIA; 
-		  } else {
-			  DIRECCION_ANTI;
-		  }
-	  }
-	  if ((pap.direccion_set <= (pap.direccion_lectura + VENTANA_DIRECCION)) && (pap.direccion_set >= (pap.direccion_lectura - VENTANA_DIRECCION))){
-		  //pap.FLAG_EN = false;
-		  pap.FLAG_DIRECCION = false;
-		  pap.pwm_direccion = 0;
-		  //BitOut_DIR_PWM_ClrVal();
-		  //DIRECCION_OFF;
-	  }
-	  //######## END DIRECCION
-	}
-	//FIN
-	  GetVelocidad(&motor_di);
-	  GetVelocidad(&motor_dd);
-	  GetVelocidad(&motor_td);
-	  GetVelocidad(&motor_ti);
-	  Get_Corriente();
-	  Get_Direccion(&pap);
 	  
 	  switch (ESTADO){	  
 	  case LA_VELOCIDAD:
@@ -852,7 +900,10 @@ void Get_Direccion(PAP *pap_x){
 		lectura = lectura + z;
 		z = (!BIT7_GetVal()) ? 128 : 0;
 		lectura = lectura + z;
-		pap_x->direccion_lectura = GrayToBin(lectura);
+		lectura = GrayToBin(lectura);
+		lectura = (lectura >= LIMITE_DIRECCION_DERECHO) ? LIMITE_DIRECCION_DERECHO : lectura;
+		lectura = (lectura <= LIMITE_DIRECCION_IZQUIERDO) ? LIMITE_DIRECCION_IZQUIERDO : lectura;
+		pap_x->direccion_lectura = lectura;
 }
 void SetDuty(MOTOR motor_x){
 	switch (motor_x.nro){

@@ -78,6 +78,9 @@ extern byte FLAG_ADC;						//FLAG de ADC TERMINO
 extern byte FLAG_RX;						//Hay datos para procesar RECIBIDOS
 extern byte FLAG_TX;						//Hay datos para procesar ENVIAR
 
+extern uint16 emergencias;
+extern uint16 RPM_SET;
+
 
 // NUEVO
 extern MOTOR motor_di;
@@ -208,6 +211,9 @@ void IntTiempo_OnInterrupt(void)
 	motor_ti.cuenta_vel_cero += 1;
 	motor_td.cuenta_vel_cero += 1;
 	motor_dd.Input.tiempo = (motor_dd.Input.FLAG_E) ? ++motor_dd.Input.tiempo : 0;	//CUENTO SI BANDERA PULSO
+	motor_di.Input.tiempo = (motor_di.Input.FLAG_E) ? ++motor_di.Input.tiempo : 0;	//CUENTO SI BANDERA PULSO
+	motor_td.Input.tiempo = (motor_td.Input.FLAG_E) ? ++motor_td.Input.tiempo : 0;	//CUENTO SI BANDERA PULSO
+	motor_ti.Input.tiempo = (motor_ti.Input.FLAG_E) ? ++motor_ti.Input.tiempo : 0;	//CUENTO SI BANDERA PULSO
 	if (ESTADO == CALIBRACION || ESTADO == LC_REMOTO || ESTADO == LA_REMOTO){
 		velocidad.perdida_senal_remoto++;
 		direccion.perdida_senal_remoto++;
@@ -664,6 +670,7 @@ void UART_MODBUS_OnTxComplete(void)
 void Btn_Emergencia_OnInterrupt(void)
 {
   /* Write your code here ... */
+	emergencias++;
 	BitLed_Verde_ClrVal();
 	while(Btn_Emergencia_GetVal()){
 		ESTADO = PERDIDA_SENAL;
@@ -675,6 +682,15 @@ void Btn_Emergencia_OnInterrupt(void)
 		motor_dd.tension = 0;
 		motor_ti.tension = 0;
 		motor_td.tension = 0;
+		motor_dd.control = 0;
+		motor_di.control = 0;
+		motor_td.control = 0;
+		motor_ti.control = 0;
+		RPM_SET = 0;
+		Out_PWM_DD_SetRatio16(DUTY_CERO);
+		Out_PWM_DI_SetRatio16(DUTY_CERO);
+		Out_PWM_TD_SetRatio16(DUTY_CERO);
+		Out_PWM_TI_SetRatio16(DUTY_CERO);
 	}
 	while(Btn_Emergencia_GetVal()){
 		ESTADO = PERDIDA_SENAL;
@@ -686,6 +702,15 @@ void Btn_Emergencia_OnInterrupt(void)
 		motor_dd.tension = 0;
 		motor_ti.tension = 0;
 		motor_td.tension = 0;
+		motor_dd.control = 0;
+		motor_di.control = 0;
+		motor_td.control = 0;
+		motor_ti.control = 0;
+		RPM_SET = 0;
+		Out_PWM_DD_SetRatio16(DUTY_CERO);
+		Out_PWM_DI_SetRatio16(DUTY_CERO);
+		Out_PWM_TD_SetRatio16(DUTY_CERO);
+		Out_PWM_TI_SetRatio16(DUTY_CERO);
 	}
 	BitLed_Verde_SetVal();
 }

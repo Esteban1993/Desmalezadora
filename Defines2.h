@@ -13,9 +13,9 @@
  */
 #define LA_VELOCIDAD			1
 #define LA_REMOTO				4
-#define LC_REMOTO				2
+#define CALIBRACION				2
 #define LC_PC					3
-#define CALIBRACION				6
+#define LC_REMOTO				6
 #define PASOS					7
 #define PERDIDA_SENAL			30
 
@@ -30,7 +30,7 @@
 #define	ADELANTE				0
 
 #define PERDIDA_REMOTO			1000	//ms que deben pasar para definir la perdida de la señal REMOTO
-#define CUENTAS_REMOTO			100		//Limite para definir el ancho del pulso CALIBRADO
+#define CUENTAS_REMOTO			2000		//Limite para definir el ancho del pulso CALIBRADO
 #define RESET_VELOCIDAD_MS		300
 #define	VELOCIDAD				0
 #define	DIRECCION				1
