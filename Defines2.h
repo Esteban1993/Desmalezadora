@@ -34,6 +34,7 @@
 #define RESET_VELOCIDAD_MS		300
 #define	VELOCIDAD				0
 #define	DIRECCION				1
+#define REMOTO_PERDIDA_SENAL	500		//ms
 #define REMOTO_ANCHO_PULSO		28		//Desplazamiento MINIMO del ancho del pulso REMOTO x10us
 #define REMOTO_VENTANA			0		//definir
 #define REMOTO_VEL_CERO			150
@@ -44,7 +45,7 @@
 #define REMOTO_DIR_MIN			97
 #define VENTANA_DIRECCION		2
 
-#define K_PID					33
+#define K_PID					15	//33
 #define TI_PID					4	//NO ANDA, HAY QUE PONER 4 y DIVIDIR POR 10 CASTEANDO A FLOAT
 #define MUESTREO_PID			100
 
@@ -97,6 +98,7 @@
 #define DIRECCION_CENTRO			200
 #define LIMITE_DIRECCION_IZQUIERDO	160
 
-
+#define PC_LI						-100
+#define PC_LD						100
 
 #endif /* DEFINES2_H_ */

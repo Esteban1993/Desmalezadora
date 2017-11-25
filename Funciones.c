@@ -21,7 +21,7 @@ long Mapeo(long x, long in_min, long in_max, long out_min, long out_max)
 
 void Get_Remoto(REMOTO *remoto_x){
 	if (remoto_x->FLAG_TIEMPO){
-		remoto_x->FLAG_TIEMPO = 0;
+		remoto_x->FLAG_TIEMPO = false;
 		remoto_x->ms = GET_RECEP(remoto_x->Input.periodo);
 		remoto_x->perdida_senal_remoto = 0;
 	}
@@ -30,7 +30,7 @@ void GetVelocidad (MOTOR *motor_x){
 	if (motor_x->FLAG_TIEMPO){
 		motor_x->FLAG_TIEMPO = false;
 		motor_x->ms = GET_VEL(motor_x->Input.periodo);
-		motor_x->rpm=60000/(motor_x->ms/10*24);
+		motor_x->rpm = 60000/(motor_x->ms/10*24);
 	}
 	if (motor_x->cuenta_vel_cero >= RESET_VELOCIDAD_MS){	//un pulso, se pone vel en cero										
 		motor_x->FLAG_TIEMPO = false;
@@ -47,12 +47,16 @@ void RPM_Cero(MOTOR *motor_x){
 	}
 }
 void Error_PID(MOTOR *motor_x){
-	motor_x->error_RPM = (motor_x->RPM_set - motor_x->rpm);	
+	motor_x->error_RPM = (motor_x->RPM_set - motor_x->rpm);
+	motor_x->error_RPM = (motor_x->error_RPM >= 50) ? 50 : motor_x->error_RPM;
+	motor_x->error_RPM = (motor_x->error_RPM <= -50) ? -50 : motor_x->error_RPM;
+	/*
 	if (motor_x->RPM_set < 10){
 		motor_x->k = K_PID/2;
 	} else {
 		motor_x->k = K_PID;
 	}
+	*/
 	//TI = 0.5352609
 }
 void CtrlPID_SetK(MOTOR motor_x){

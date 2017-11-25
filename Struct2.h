@@ -115,7 +115,12 @@ typedef struct serie {
 } SERIE;
 
 typedef struct pc {
-	uint16 rpm_global;            	// RPM de Entrada PC
+	uint16 duty_global;            //Duty de Entrada PC
+	uint16 rpm_global;            //RPM de Entrada PC
+	int8 direccion;				//Posicion Encoder
+	uint8 pap_ha;				//Habilita PAP
+	uint8 pap_en;				//Enable Driver
+	uint8 reversa;				//Posicion Encoder
 } PC;
 
 typedef struct motor_tx {
