@@ -11,13 +11,13 @@
 /*
  * ######################## DEFINES ###############################
  */
-#define LA_VELOCIDAD			1
-#define LA_REMOTO				4
-#define CALIBRACION				2
-#define LC_PC					3
-#define LC_REMOTO				6
-#define PASOS					7
-#define PERDIDA_SENAL			30
+#define CALIBRACION				0
+#define LA_REMOTO				1
+#define LC_REMOTO				2
+#define LA_PC					3
+#define LC_PC					4
+#define PASOS					5
+#define PERDIDA_SENAL			10
 
 #define	MOTOR_DI				0
 #define	MOTOR_DD				1
@@ -36,7 +36,7 @@
 #define	DIRECCION				1
 #define REMOTO_PERDIDA_SENAL	500		//ms
 #define REMOTO_ANCHO_PULSO		28		//Desplazamiento MINIMO del ancho del pulso REMOTO x10us
-#define REMOTO_VENTANA			0		//definir
+#define REMOTO_VENTANA			1		//definir
 #define REMOTO_VEL_CERO			150
 #define REMOTO_VEL_MAX			204
 #define REMOTO_VEL_MIN			116
@@ -100,5 +100,7 @@
 
 #define PC_LI						-100
 #define PC_LD						100
+#define PC_LDUTYMIN					0
+#define PC_LDUTYMAX					100
 
 #endif /* DEFINES2_H_ */

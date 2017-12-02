@@ -63,10 +63,11 @@ typedef struct motor {
 	uint8 FLAG_TIEMPO;				//FLAG de VELOCIDAD LEIDA
 	uint32 posicion_pulsos;			//Contador de Flancos del Motor
 	uint16 cuenta_vel_cero;			//Contador para determinar Vel CERO si no se registran nuevos flancos
+	uint16 pulsos;
 	uint16 adc;						//Valores de los ADC de cada MOTOR
 	uint16 i;						//Valores de Corriente
 	uint16 ms;						//Velocidad en ms del encoder
-	uint16 ms_ant;					//Velocidad en ms del encoder
+	uint16 ms_t;					//Velocidad en ms del encoder en T
 	uint16 rpm;						//Lectura RPM
 	uint16 RPM_set;					//SETPOINT DE RPM GLOBAL
 	int32 error_RPM;				//Entrada al PID [SETPOINT - LECTURA]
@@ -115,27 +116,13 @@ typedef struct serie {
 } SERIE;
 
 typedef struct pc {
-	uint16 duty_global;            //Duty de Entrada PC
+	uint8 duty_global;            //Duty de Entrada PC 0 a 100
 	uint16 rpm_global;            //RPM de Entrada PC
 	int8 direccion;				//Posicion Encoder
 	uint8 pap_ha;				//Habilita PAP
 	uint8 pap_en;				//Enable Driver
 	uint8 reversa;				//Posicion Encoder
 } PC;
-
-typedef struct motor_tx {
-	uint8 nro;
-	uint16 rpm;
-	uint16 i;
-	uint32 posicion;
-} MOTOR_TX;
-
-typedef struct tx { //256bytes
-	MOTOR_TX motor_di;
-	MOTOR_TX motor_dd;
-	MOTOR_TX motor_td;
-	MOTOR_TX motor_ti;
-} TX;
 
 
 #endif /* STRUCT2_H_ */

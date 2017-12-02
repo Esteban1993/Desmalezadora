@@ -30,12 +30,16 @@ void GetVelocidad (MOTOR *motor_x){
 	if (motor_x->FLAG_TIEMPO){
 		motor_x->FLAG_TIEMPO = false;
 		motor_x->ms = GET_VEL(motor_x->Input.periodo);
-		motor_x->rpm = 60000/(motor_x->ms/10*24);
+		if (motor_x->ms == 0){
+			motor_x->rpm = 0;			
+		} else {
+			motor_x->rpm = 60000/(motor_x->ms/10*24);			
+		}
 	}
 	if (motor_x->cuenta_vel_cero >= RESET_VELOCIDAD_MS){	//un pulso, se pone vel en cero										
 		motor_x->FLAG_TIEMPO = false;
 		motor_x->ms = 0;
-		motor_x->ms_ant = 0;
+		motor_x->pulsos = 0;
 		motor_x->rpm = 0;
 		motor_x->cuenta_vel_cero = 0;
 		motor_x->Input.indices = 0;
@@ -102,6 +106,13 @@ unsigned char Vel_Cero(MOTOR motor_1, MOTOR motor_2, MOTOR motor_3, MOTOR motor_
 	}
 	return 1;
 }
+unsigned char Tension_Cero(MOTOR motor_1, MOTOR motor_2, MOTOR motor_3, MOTOR motor_4){
+	if ((motor_1.tension + motor_2.tension +
+		  motor_3.tension + motor_4.tension)>=1){
+		return 0;
+	}
+	return 1;
+}
 void Tension2Duty(MOTOR *motor_x){
 	//%%%%%%%%%%%%%%%%%%%% VER QUE LA VARIABLE TENSION NO SEA NEGATIVA! %%%%%%%%%%%%%%%%%%%%%%%%%%%%!!!!!!!
 	motor_x->tension = (motor_x->tension >= U_MAX) ? U_MAX : motor_x->tension;	
@@ -111,10 +122,10 @@ void Tension2Duty(MOTOR *motor_x){
 void Reset_PIDs(MOTOR motor_x){
 	switch (motor_x.nro){
 	case MOTOR_DI:
-		CtrlPID_DD_Reset();		
+		CtrlPID_DI_Reset();		
 		break;
 	case MOTOR_DD:
-		CtrlPID_DI_Reset();	
+		CtrlPID_DD_Reset();	
 		break;
 	case MOTOR_TD:
 		CtrlPID_TD_Reset();	
@@ -133,8 +144,7 @@ unsigned short GrayToBin(unsigned short N){
 	int i;
 	for(i=0; D>1;i++) D>>=1;
 	D<<=i;
-	X = D;
-	
+	X = D;	
 	while(X>1){
 		N = N^((N&X)>>1);
 		X>>=1;
@@ -177,12 +187,30 @@ void Motor2Send(SERIE *serie, MOTOR_TX *motor){
 	}
 }
 void GetEncoder(MOTOR *motor_x){
+	bool val;
+	switch (motor_x->nro){
+	case MOTOR_DI:
+		val = Encoder_DI_GetVal();
+		break;
+	case MOTOR_DD:
+		val = Encoder_DD_GetVal();	
+		break;
+	case MOTOR_TD:
+		val = Encoder_TD_GetVal();
+		break;
+	case MOTOR_TI:
+		val = Encoder_TI_GetVal();
+		break;
+	default:
+		break;
+	}	
 	if(motor_x->Input.tiempo >= RETENCION_MS){						//ESPERO UN TIEMPO UNA VEZ RECIBIDO UN PULSO
 		  if (motor_x->Input.FLAG_E){						//BANDERA DE UN PULSO
 			  if( motor_x->Input.edge == RISING){
-				  if (Encoder_DD_GetVal()){
+				  if (val == true){
 					  motor_x->Input.datos[motor_x->Input.indices] = motor_x->Input.aux;
 					  motor_x->Input.indices++;
+					  motor_x->pulsos++;
 					  if (motor_x->Input.indices == 2){
 						  motor_x->Input.periodo = motor_x->Input.datos[1] - motor_x->Input.datos[0];
 						  motor_x->Input.datos[0] = motor_x->Input.datos[1];
@@ -192,12 +220,12 @@ void GetEncoder(MOTOR *motor_x){
 						  motor_x->cuenta_vel_cero = 0;
 					  }
 					  motor_x->Input.edge = FALLING;
-					  //TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_x->Input.nro, EDGE_FALLING);
 				  }
 			  } else { //CUANDO ES FALLING
-				  if (!Encoder_DD_GetVal()){
+				  if (val == false){
 					  motor_x->Input.datos[motor_x->Input.indices] = motor_x->Input.aux;
 					  motor_x->Input.indices++;
+					  motor_x->pulsos++;
 					  if (motor_x->Input.indices == 2){
 						  motor_x->Input.periodo = motor_x->Input.datos[1] - motor_x->Input.datos[0];
 						  motor_x->Input.datos[0] = motor_x->Input.datos[1];
@@ -207,7 +235,6 @@ void GetEncoder(MOTOR *motor_x){
 						  motor_x->cuenta_vel_cero = 0;
 					  }
 					  motor_x->Input.edge = RISING;
-					  //TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_x->Input.nro, EDGE_RISING);
 				  }
 			  }
 			  motor_x->Input.FLAG_E = false;

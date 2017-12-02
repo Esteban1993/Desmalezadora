@@ -13,7 +13,7 @@
 **     Contents    :
 **         ADC_DD_OnEnd                 - void ADC_DD_OnEnd(void);
 **         ADC_DD_OnCalibrationEnd      - void ADC_DD_OnCalibrationEnd(void);
-**         Input_Encoder_DI_OnCapture            - void Input_Encoder_DI_OnCapture(void);
+**         Input_Encoder_DD_OnCapture            - void Input_Encoder_DD_OnCapture(void);
 **         IntEncoder_DD_OnInterrupt - void IntEncoder_DD_OnInterrupt(void);
 **         IntEncoder_DI_OnInterrupt - void IntEncoder_DI_OnInterrupt(void);
 **         Btn_SW2_OnInterrupt        - void Btn_SW2_OnInterrupt(void);
@@ -69,23 +69,23 @@
 #include "TTemp.h"
 #include "CtrlPID_DI.h"
 #include "MCUC1.h"
-#include "Out_PWM_DI.h"
+#include "Out_PWM_DD.h"
 #include "PwmLdd1.h"
 #include "TPWM.h"
-#include "Out_PWM_DD.h"
-#include "PwmLdd3.h"
 #include "Out_PWM_TD.h"
+#include "PwmLdd3.h"
+#include "Out_PWM_DI.h"
 #include "PwmLdd2.h"
 #include "TPulsos.h"
 #include "Out_PWM_TI.h"
 #include "PwmLdd4.h"
-#include "Input_Encoder_DI.h"
-#include "CaptureLdd1.h"
 #include "Input_Encoder_DD.h"
+#include "CaptureLdd1.h"
+#include "Input_Encoder_TD.h"
 #include "CaptureLdd2.h"
 #include "Input_Encoder_TI.h"
 #include "CaptureLdd3.h"
-#include "Input_Encoder_TD.h"
+#include "Input_Encoder_DI.h"
 #include "CaptureLdd4.h"
 #include "BitOut_DIR_SENT.h"
 #include "BitIoLdd2.h"
@@ -116,11 +116,11 @@
 #include "BitIoLdd15.h"
 #include "Btn_Emergencia.h"
 #include "ExtIntLdd2.h"
-#include "Encoder_DD.h"
-#include "BitIoLdd16.h"
-#include "Encoder_DI.h"
-#include "BitIoLdd17.h"
 #include "Encoder_TD.h"
+#include "BitIoLdd16.h"
+#include "Encoder_DD.h"
+#include "BitIoLdd17.h"
+#include "Encoder_DI.h"
 #include "BitIoLdd18.h"
 #include "Encoder_TI.h"
 #include "BitIoLdd19.h"
@@ -147,9 +147,9 @@ void ADC_DD_OnEnd(void);
 
 /*
 ** ===================================================================
-**     Event       :  Input_Encoder_DI_OnCapture (module Events)
+**     Event       :  Input_Encoder_DD_OnCapture (module Events)
 **
-**     Component   :  Input_Encoder_DI [Capture]
+**     Component   :  Input_Encoder_DD [Capture]
 **     Description :
 **         This event is called on capturing of Timer/Counter actual
 **         value (only when the component is enabled - <Enable> and the
@@ -159,7 +159,7 @@ void ADC_DD_OnEnd(void);
 **     Returns     : Nothing
 ** ===================================================================
 */
-void Input_Encoder_DI_OnCapture(void);
+void Input_Encoder_DD_OnCapture(void);
 
 void Btn_SW2_OnInterrupt(void);
 /*
@@ -223,22 +223,6 @@ void Cpu_OnNMI(void);
 
 /*
 ** ===================================================================
-**     Event       :  Input_Encoder_DD_OnCapture (module Events)
-**
-**     Component   :  Input_Encoder_DD [Capture]
-**     Description :
-**         This event is called on capturing of Timer/Counter actual
-**         value (only when the component is enabled - <Enable> and the
-**         events are enabled - <EnableEvent>.This event is available
-**         only if a <interrupt service/event> is enabled.
-**     Parameters  : None
-**     Returns     : Nothing
-** ===================================================================
-*/
-void Input_Encoder_DD_OnCapture(void);
-
-/*
-** ===================================================================
 **     Event       :  Input_Encoder_TD_OnCapture (module Events)
 **
 **     Component   :  Input_Encoder_TD [Capture]
@@ -252,6 +236,22 @@ void Input_Encoder_DD_OnCapture(void);
 ** ===================================================================
 */
 void Input_Encoder_TD_OnCapture(void);
+
+/*
+** ===================================================================
+**     Event       :  Input_Encoder_DI_OnCapture (module Events)
+**
+**     Component   :  Input_Encoder_DI [Capture]
+**     Description :
+**         This event is called on capturing of Timer/Counter actual
+**         value (only when the component is enabled - <Enable> and the
+**         events are enabled - <EnableEvent>.This event is available
+**         only if a <interrupt service/event> is enabled.
+**     Parameters  : None
+**     Returns     : Nothing
+** ===================================================================
+*/
+void Input_Encoder_DI_OnCapture(void);
 
 /*
 ** ===================================================================

@@ -13,7 +13,7 @@
 **     Contents    :
 **         ADC_DD_OnEnd                 - void ADC_DD_OnEnd(void);
 **         ADC_DD_OnCalibrationEnd      - void ADC_DD_OnCalibrationEnd(void);
-**         Input_Encoder_DI_OnCapture            - void Input_Encoder_DI_OnCapture(void);
+**         Input_Encoder_DD_OnCapture            - void Input_Encoder_DD_OnCapture(void);
 **         IntEncoder_DD_OnInterrupt - void IntEncoder_DD_OnInterrupt(void);
 **         IntEncoder_DI_OnInterrupt - void IntEncoder_DI_OnInterrupt(void);
 **         Btn_SW2_OnInterrupt        - void Btn_SW2_OnInterrupt(void);
@@ -101,9 +101,9 @@ extern SERIE serie;
 
 /*
 ** ===================================================================
-**     Event       :  Input_Encoder_DI_OnCapture (module Events)
+**     Event       :  Input_Encoder_DD_OnCapture (module Events)
 **
-**     Component   :  Input_Encoder_DI [Capture]
+**     Component   :  Input_Encoder_DD [Capture]
 **     Description :
 **         This event is called on capturing of Timer/Counter actual
 **         value (only when the component is enabled - <Enable> and the
@@ -113,39 +113,13 @@ extern SERIE serie;
 **     Returns     : Nothing
 ** ===================================================================
 */
-void Input_Encoder_DI_OnCapture(void)
-{		
-		motor_di.Input.err = Input_Encoder_DI_GetCaptureValue(&motor_di.Input.datos[motor_di.Input.indices]);
-		motor_di.Input.indices++;
-		if (motor_di.Input.indices == 2){
-			motor_di.Input.periodo = motor_di.Input.datos[1] - motor_di.Input.datos[0];
-			motor_di.Input.datos[0] = motor_di.Input.datos[1];
-			motor_di.Input.indices = 1;
-			motor_di.FLAG_TIEMPO = 1;
-			motor_di.posicion_pulsos++;
-			motor_di.cuenta_vel_cero = 0;
-		}
-		/*
-		LDD_TDeviceData *DeviceDataPtr;
-		
-		motor_di.Input.err = Input_Encoder_DI_GetCaptureValue(&motor_di.Input.datos[motor_di.Input.indices]);
-		motor_di.Input.indices++;
-		if (motor_di.Input.indices == 2){
-			motor_di.Input.periodo = motor_di.Input.datos[1] - motor_di.Input.datos[0];
-			motor_di.Input.datos[0] = motor_di.Input.datos[1];
-			motor_di.Input.indices = 1;
-			motor_di.FLAG_TIEMPO = 1;
-			motor_di.posicion_pulsos++;
-			motor_di.cuenta_vel_cero = 0;
-		}
-		if (motor_di.Input.edge == RISING){//RISING
-			TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_di.Input.nro, EDGE_FALLING);
-		}
-		if (motor_di.Input.edge == FALLING){//FALLING
-			TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_di.Input.nro, EDGE_RISING);
-		}		
-		*/
-  /* Write your code here ... */
+void Input_Encoder_DD_OnCapture(void)
+{
+	if(!motor_dd.Input.FLAG_E){							//ESPERO PROCESAR VALOR
+		motor_dd.Input.err = Input_Encoder_DD_GetCaptureValue(&motor_dd.Input.aux);
+		motor_dd.Input.FLAG_E = TRUE;
+		motor_dd.Input.tiempo = 0;
+	}
 }
 
 /*
@@ -241,63 +215,6 @@ void Cpu_OnNMI(void)
 
 /*
 ** ===================================================================
-**     Event       :  Input_Encoder_DD_OnCapture (module Events)
-**
-**     Component   :  Input_Encoder_DD [Capture]
-**     Description :
-**         This event is called on capturing of Timer/Counter actual
-**         value (only when the component is enabled - <Enable> and the
-**         events are enabled - <EnableEvent>.This event is available
-**         only if a <interrupt service/event> is enabled.
-**     Parameters  : None
-**     Returns     : Nothing
-** ===================================================================
-*/
-void Input_Encoder_DD_OnCapture(void)
-{
-  /* Write your code here ... */
-	if(!motor_dd.Input.FLAG_E){							//ESPERO PROCESAR VALOR
-		motor_dd.Input.err = Input_Encoder_DD_GetCaptureValue(&motor_dd.Input.aux);
-		motor_dd.Input.FLAG_E = TRUE;
-		motor_dd.Input.tiempo = 0;
-	}
-	//(void)TPulsos_SelectCaptureEdge(DeviceDataPrv->LinkedDeviceDataPtr, CHANNEL, DeviceDataPrv->Edge); /* Enable capture */
-	/*
-	motor_dd.Input.err = Input_Encoder_DD_GetCaptureValue(&motor_dd.Input.datos[motor_dd.Input.indices]);
-	motor_dd.Input.indices++;
-	if (motor_dd.Input.indices == 2){
-		motor_dd.Input.periodo = motor_dd.Input.datos[1] - motor_dd.Input.datos[0];
-		motor_dd.Input.datos[0] = motor_dd.Input.datos[1];
-		motor_dd.Input.indices = 1;
-		motor_dd.FLAG_TIEMPO = 1;
-		motor_dd.posicion_pulsos++;
-		motor_dd.cuenta_vel_cero = 0;
-	}
-	*/
-	/*
-	LDD_TDeviceData *DeviceDataPtr;
-	
-	motor_dd.Input.err = Input_Encoder_DD_GetCaptureValue(&motor_dd.Input.datos[motor_dd.Input.indices]);
-	motor_dd.Input.indices++;
-	if (motor_dd.Input.indices == 2){
-		motor_dd.Input.periodo = motor_dd.Input.datos[1] - motor_dd.Input.datos[0];
-		motor_dd.Input.datos[0] = motor_dd.Input.datos[1];
-		motor_dd.Input.indices = 1;
-		motor_dd.FLAG_TIEMPO = 1;
-		motor_dd.posicion_pulsos++;
-		motor_dd.cuenta_vel_cero = 0;
-	}
-	if (motor_dd.Input.edge == RISING){//RISING
-		TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_dd.Input.nro, EDGE_FALLING);
-	}
-	if (motor_dd.Input.edge == FALLING){//FALLING
-		TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_dd.Input.nro, EDGE_RISING);
-	}
-	*/
-}
-
-/*
-** ===================================================================
 **     Event       :  Input_Encoder_TD_OnCapture (module Events)
 **
 **     Component   :  Input_Encoder_TD [Capture]
@@ -312,38 +229,35 @@ void Input_Encoder_DD_OnCapture(void)
 */
 void Input_Encoder_TD_OnCapture(void)
 {
-	
-	motor_td.Input.err = Input_Encoder_TD_GetCaptureValue(&motor_td.Input.datos[motor_td.Input.indices]);
-	motor_td.Input.indices++;
-	if (motor_td.Input.indices == 2){
-		motor_td.Input.periodo = motor_td.Input.datos[1] - motor_td.Input.datos[0];
-		motor_td.Input.datos[0] = motor_td.Input.datos[1];
-		motor_td.Input.indices = 1;
-		motor_td.FLAG_TIEMPO = 1;
-		motor_td.posicion_pulsos++;
-		motor_td.cuenta_vel_cero = 0;
+  /* Write your code here ... */
+	if(!motor_td.Input.FLAG_E){							//ESPERO PROCESAR VALOR
+		motor_td.Input.err = Input_Encoder_TD_GetCaptureValue(&motor_td.Input.aux);
+		motor_td.Input.FLAG_E = TRUE;
+		motor_td.Input.tiempo = 0;
 	}
-	
-	/*
-	LDD_TDeviceData *DeviceDataPtr;
-	
-	motor_td.Input.err = Input_Encoder_TD_GetCaptureValue(&motor_td.Input.datos[motor_td.Input.indices]);
-	motor_td.Input.indices++;
-	if (motor_td.Input.indices == 2){
-		motor_td.Input.periodo = motor_td.Input.datos[1] - motor_td.Input.datos[0];
-		motor_td.Input.datos[0] = motor_td.Input.datos[1];
-		motor_td.Input.indices = 1;
-		motor_td.FLAG_TIEMPO = 1;
-		motor_td.posicion_pulsos++;
-		motor_td.cuenta_vel_cero = 0;
+}
+
+/*
+** ===================================================================
+**     Event       :  Input_Encoder_DI_OnCapture (module Events)
+**
+**     Component   :  Input_Encoder_DI [Capture]
+**     Description :
+**         This event is called on capturing of Timer/Counter actual
+**         value (only when the component is enabled - <Enable> and the
+**         events are enabled - <EnableEvent>.This event is available
+**         only if a <interrupt service/event> is enabled.
+**     Parameters  : None
+**     Returns     : Nothing
+** ===================================================================
+*/
+void Input_Encoder_DI_OnCapture(void)
+{
+	if(!motor_di.Input.FLAG_E){							//ESPERO PROCESAR VALOR
+		motor_di.Input.err = Input_Encoder_DI_GetCaptureValue(&motor_di.Input.aux);
+		motor_di.Input.FLAG_E = TRUE;
+		motor_di.Input.tiempo = 0;
 	}
-	if (motor_td.Input.edge == RISING){//RISING
-		TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_td.Input.nro, EDGE_FALLING);
-	}
-	if (motor_td.Input.edge == FALLING){//FALLING
-		TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_td.Input.nro, EDGE_RISING);
-	}
-	*/
 }
 
 /*
@@ -362,38 +276,11 @@ void Input_Encoder_TD_OnCapture(void)
 */
 void Input_Encoder_TI_OnCapture(void)
 {
-	
-	motor_ti.Input.err = Input_Encoder_TI_GetCaptureValue(&motor_ti.Input.datos[motor_ti.Input.indices]);
-	motor_ti.Input.indices++;
-	if (motor_ti.Input.indices == 2){
-		motor_ti.Input.periodo = motor_ti.Input.datos[1] - motor_ti.Input.datos[0];
-		motor_ti.Input.datos[0] = motor_ti.Input.datos[1];
-		motor_ti.Input.indices = 1;
-		motor_ti.FLAG_TIEMPO = 1;
-		motor_ti.posicion_pulsos++;
-		motor_ti.cuenta_vel_cero = 0;
+	if(!motor_ti.Input.FLAG_E){							//ESPERO PROCESAR VALOR
+		motor_ti.Input.err = Input_Encoder_TI_GetCaptureValue(&motor_ti.Input.aux);
+		motor_ti.Input.FLAG_E = TRUE;
+		motor_ti.Input.tiempo = 0;
 	}
-	
-	/*
-	LDD_TDeviceData *DeviceDataPtr;
-	
-	motor_ti.Input.err = Input_Encoder_TI_GetCaptureValue(&motor_ti.Input.datos[motor_ti.Input.indices]);
-	motor_ti.Input.indices++;
-	if (motor_ti.Input.indices == 2){
-		motor_ti.Input.periodo = motor_ti.Input.datos[1] - motor_ti.Input.datos[0];
-		motor_ti.Input.datos[0] = motor_ti.Input.datos[1];
-		motor_ti.Input.indices = 1;
-		motor_ti.FLAG_TIEMPO = 1;
-		motor_ti.posicion_pulsos++;
-		motor_ti.cuenta_vel_cero = 0;
-	}
-	if (motor_ti.Input.edge == RISING){//RISING
-		TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_ti.Input.nro, EDGE_FALLING);
-	}
-	if (motor_ti.Input.edge == FALLING){//FALLING
-		TPulsos_SelectCaptureEdge(DeviceDataPtr, motor_ti.Input.nro, EDGE_RISING);
-	}
-	*/
 }
 
 /*
@@ -577,7 +464,7 @@ void UART_MODBUS_OnError(void)
 void UART_MODBUS_OnRxChar(void)
 {
 	UART_MODBUS_RecvChar(&serie.rx_buf[serie.rx_next]);
-	if (serie.rx_buf[serie.rx_next] == '\r'){
+	if (serie.rx_buf[serie.rx_next] == '\n'){
 		serie.FLAG_RX = 1;
 	}
 	inc(serie.rx_next);
@@ -673,7 +560,6 @@ void Btn_Emergencia_OnInterrupt(void)
 	emergencias++;
 	BitLed_Verde_ClrVal();
 	while(Btn_Emergencia_GetVal()){
-		ESTADO = PERDIDA_SENAL;
 		Reset_PIDs(motor_di);
 		Reset_PIDs(motor_dd);
 		Reset_PIDs(motor_ti);
@@ -687,13 +573,12 @@ void Btn_Emergencia_OnInterrupt(void)
 		motor_td.control = 0;
 		motor_ti.control = 0;
 		RPM_SET = 0;
+		Out_PWM_TD_SetRatio16(DUTY_CERO);
 		Out_PWM_DD_SetRatio16(DUTY_CERO);
 		Out_PWM_DI_SetRatio16(DUTY_CERO);
-		Out_PWM_TD_SetRatio16(DUTY_CERO);
 		Out_PWM_TI_SetRatio16(DUTY_CERO);
 	}
 	while(Btn_Emergencia_GetVal()){
-		ESTADO = PERDIDA_SENAL;
 		Reset_PIDs(motor_di);
 		Reset_PIDs(motor_dd);
 		Reset_PIDs(motor_ti);
@@ -707,9 +592,9 @@ void Btn_Emergencia_OnInterrupt(void)
 		motor_td.control = 0;
 		motor_ti.control = 0;
 		RPM_SET = 0;
+		Out_PWM_TD_SetRatio16(DUTY_CERO);
 		Out_PWM_DD_SetRatio16(DUTY_CERO);
 		Out_PWM_DI_SetRatio16(DUTY_CERO);
-		Out_PWM_TD_SetRatio16(DUTY_CERO);
 		Out_PWM_TI_SetRatio16(DUTY_CERO);
 	}
 	BitLed_Verde_SetVal();
