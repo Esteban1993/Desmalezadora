@@ -13,7 +13,7 @@
 **     Contents    :
 **         ADC_DD_OnEnd                 - void ADC_DD_OnEnd(void);
 **         ADC_DD_OnCalibrationEnd      - void ADC_DD_OnCalibrationEnd(void);
-**         Input_Encoder_DI_OnCapture            - void Input_Encoder_DI_OnCapture(void);
+**         Input_Encoder_DD_OnCapture            - void Input_Encoder_DD_OnCapture(void);
 **         IntEncoder_DD_OnInterrupt - void IntEncoder_DD_OnInterrupt(void);
 **         IntEncoder_DI_OnInterrupt - void IntEncoder_DI_OnInterrupt(void);
 **         Btn_SW2_OnInterrupt        - void Btn_SW2_OnInterrupt(void);
@@ -39,8 +39,8 @@
 #include "Events.h"
 #include "Init_Config.h"
 #include "PDD_Includes.h"
-#include "Struct.h"
-#include "Defines.h"
+#include "Struct2.h"
+#include "Defines2.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -65,17 +65,21 @@ extern byte FLAG_DIRECCION_SENTIDO;			//PASO A PASO SENTIDO DE GIRO
 extern byte FLAG_SW1;						//FLAG DEL PULSADOR 1
 extern byte FLAG_SW2;						//FLAG DEL PULSADOR 2
 extern word perdida_senal_remoto[2];		//Contador para detectar perdida de señal en modo REMOTO o CALIBRACION
+extern word cuenta_EMERGENCIA;
 extern word cnt_aux;						//Cuenta AUXILIAR en interrupcion INTTIEMPO
 extern word cuenta_PID;						//Cuenta de tiempo PID
 extern word cuenta_RECIBIR;					//Cuenta de tiempo RECIBIR
 extern word cuenta_ENVIAR;					//Cuenta de tiempo ENVIAR
-extern word cuenta_RX;						//Cuenta de tiempo RECIBIR
+extern word cuenta_TX;						//Cuenta de tiempo RECIBIR
 extern word cuenta_DIRECCION;				//Cuenta para leer direccion
 extern byte FLAG_TIEMPO[4];					//FLAG de VELOCIDAD LEIDA
 extern byte FLAG_RECEPTOR[2];				//FLAG de ANCHO DE PULSO LEIDO REMOTO
 extern byte FLAG_ADC;						//FLAG de ADC TERMINO
 extern byte FLAG_RX;						//Hay datos para procesar RECIBIDOS
 extern byte FLAG_TX;						//Hay datos para procesar ENVIAR
+
+extern uint16 emergencias;
+extern uint16 RPM_SET;
 
 
 // NUEVO
@@ -89,15 +93,17 @@ extern REMOTO velocidad;
 
 extern PAP pap;
 
+extern SERIE serie;
+
 /* User includes (#include below this line is not maintained by Processor Expert) */
 
 
 
 /*
 ** ===================================================================
-**     Event       :  Input_Encoder_DI_OnCapture (module Events)
+**     Event       :  Input_Encoder_DD_OnCapture (module Events)
 **
-**     Component   :  Input_Encoder_DI [Capture]
+**     Component   :  Input_Encoder_DD [Capture]
 **     Description :
 **         This event is called on capturing of Timer/Counter actual
 **         value (only when the component is enabled - <Enable> and the
@@ -107,18 +113,13 @@ extern PAP pap;
 **     Returns     : Nothing
 ** ===================================================================
 */
-void Input_Encoder_DI_OnCapture(void)
+void Input_Encoder_DD_OnCapture(void)
 {
-	if (motor_di.Input.indices == 2){
-		motor_di.Input.periodo = motor_di.Input.datos[1] - motor_di.Input.datos[0];
-		motor_di.Input.indices = 0;
-		motor_di.FLAG_TIEMPO = 1;
-		motor_di.posicion_pulsos++;
-		motor_di.cuenta_vel_cero = 0;
+	if(!motor_dd.Input.FLAG_E){							//ESPERO PROCESAR VALOR
+		motor_dd.Input.err = Input_Encoder_DD_GetCaptureValue(&motor_dd.Input.aux);
+		motor_dd.Input.FLAG_E = TRUE;
+		motor_dd.Input.tiempo = 0;
 	}
-	motor_di.Input.err = Input_Encoder_DI_GetCaptureValue(&motor_di.Input.datos[motor_di.Input.indices]);
-	motor_di.Input.indices++;
-  /* Write your code here ... */
 }
 
 /*
@@ -172,18 +173,21 @@ void Btn_SW1_OnInterrupt(void)
 */
 void IntTiempo_OnInterrupt(void)
 {
-	byte i;
-	
+	byte i;	
 	cnt_aux++;
 	cuenta_RECIBIR++;
 	cuenta_ENVIAR++;
 	cuenta_PID++;
-	cuenta_RX++;
+	cuenta_TX++;
 	cuenta_DIRECCION++;
 	motor_di.cuenta_vel_cero += 1;
 	motor_dd.cuenta_vel_cero += 1;
 	motor_ti.cuenta_vel_cero += 1;
 	motor_td.cuenta_vel_cero += 1;
+	motor_dd.Input.tiempo = (motor_dd.Input.FLAG_E) ? ++motor_dd.Input.tiempo : 0;	//CUENTO SI BANDERA PULSO
+	motor_di.Input.tiempo = (motor_di.Input.FLAG_E) ? ++motor_di.Input.tiempo : 0;	//CUENTO SI BANDERA PULSO
+	motor_td.Input.tiempo = (motor_td.Input.FLAG_E) ? ++motor_td.Input.tiempo : 0;	//CUENTO SI BANDERA PULSO
+	motor_ti.Input.tiempo = (motor_ti.Input.FLAG_E) ? ++motor_ti.Input.tiempo : 0;	//CUENTO SI BANDERA PULSO
 	if (ESTADO == CALIBRACION || ESTADO == LC_REMOTO || ESTADO == LA_REMOTO){
 		velocidad.perdida_senal_remoto++;
 		direccion.perdida_senal_remoto++;
@@ -211,34 +215,6 @@ void Cpu_OnNMI(void)
 
 /*
 ** ===================================================================
-**     Event       :  Input_Encoder_DD_OnCapture (module Events)
-**
-**     Component   :  Input_Encoder_DD [Capture]
-**     Description :
-**         This event is called on capturing of Timer/Counter actual
-**         value (only when the component is enabled - <Enable> and the
-**         events are enabled - <EnableEvent>.This event is available
-**         only if a <interrupt service/event> is enabled.
-**     Parameters  : None
-**     Returns     : Nothing
-** ===================================================================
-*/
-void Input_Encoder_DD_OnCapture(void)
-{
-  /* Write your code here ... */
-	if (motor_dd.Input.indices == 2){
-		motor_dd.Input.periodo = motor_dd.Input.datos[1] - motor_dd.Input.datos[0];
-		motor_dd.Input.indices = 0;
-		motor_dd.FLAG_TIEMPO = 1;
-		motor_dd.posicion_pulsos++;
-		motor_dd.cuenta_vel_cero = 0;
-	}
-	motor_dd.Input.err = Input_Encoder_DI_GetCaptureValue(&motor_dd.Input.datos[motor_dd.Input.indices]);
-	motor_dd.Input.indices++;
-}
-
-/*
-** ===================================================================
 **     Event       :  Input_Encoder_TD_OnCapture (module Events)
 **
 **     Component   :  Input_Encoder_TD [Capture]
@@ -254,15 +230,34 @@ void Input_Encoder_DD_OnCapture(void)
 void Input_Encoder_TD_OnCapture(void)
 {
   /* Write your code here ... */
-	if (motor_td.Input.indices == 2){
-		motor_td.Input.periodo = motor_td.Input.datos[1] - motor_td.Input.datos[0];
-		motor_td.Input.indices = 0;
-		motor_td.FLAG_TIEMPO = 1;
-		motor_td.posicion_pulsos++;
-		motor_td.cuenta_vel_cero = 0;
+	if(!motor_td.Input.FLAG_E){							//ESPERO PROCESAR VALOR
+		motor_td.Input.err = Input_Encoder_TD_GetCaptureValue(&motor_td.Input.aux);
+		motor_td.Input.FLAG_E = TRUE;
+		motor_td.Input.tiempo = 0;
 	}
-	motor_td.Input.err = Input_Encoder_DI_GetCaptureValue(&motor_td.Input.datos[motor_td.Input.indices]);
-	motor_td.Input.indices++;
+}
+
+/*
+** ===================================================================
+**     Event       :  Input_Encoder_DI_OnCapture (module Events)
+**
+**     Component   :  Input_Encoder_DI [Capture]
+**     Description :
+**         This event is called on capturing of Timer/Counter actual
+**         value (only when the component is enabled - <Enable> and the
+**         events are enabled - <EnableEvent>.This event is available
+**         only if a <interrupt service/event> is enabled.
+**     Parameters  : None
+**     Returns     : Nothing
+** ===================================================================
+*/
+void Input_Encoder_DI_OnCapture(void)
+{
+	if(!motor_di.Input.FLAG_E){							//ESPERO PROCESAR VALOR
+		motor_di.Input.err = Input_Encoder_DI_GetCaptureValue(&motor_di.Input.aux);
+		motor_di.Input.FLAG_E = TRUE;
+		motor_di.Input.tiempo = 0;
+	}
 }
 
 /*
@@ -281,16 +276,11 @@ void Input_Encoder_TD_OnCapture(void)
 */
 void Input_Encoder_TI_OnCapture(void)
 {
-  /* Write your code here ... */
-	if (motor_ti.Input.indices == 2){
-		motor_ti.Input.periodo = motor_ti.Input.datos[1] - motor_ti.Input.datos[0];
-		motor_ti.Input.indices = 0;
-		motor_ti.FLAG_TIEMPO = 1;
-		motor_ti.posicion_pulsos++;
-		motor_ti.cuenta_vel_cero = 0;
+	if(!motor_ti.Input.FLAG_E){							//ESPERO PROCESAR VALOR
+		motor_ti.Input.err = Input_Encoder_TI_GetCaptureValue(&motor_ti.Input.aux);
+		motor_ti.Input.FLAG_E = TRUE;
+		motor_ti.Input.tiempo = 0;
 	}
-	motor_ti.Input.err = Input_Encoder_DI_GetCaptureValue(&motor_ti.Input.datos[motor_ti.Input.indices]);
-	motor_ti.Input.indices++;
 }
 
 /*
@@ -390,7 +380,7 @@ void ReceptorDireccion_OnCapture(void)
 			direccion.FLAG_TIEMPO = 0;
 		}
 	}
-	direccion.Input.err = ReceptorVelocidad_GetCaptureValue(&direccion.Input.datos[direccion.Input.indices]);
+	direccion.Input.err = ReceptorDireccion_GetCaptureValue(&direccion.Input.datos[direccion.Input.indices]);
 	direccion.Input.indices++;
 }
 
@@ -411,20 +401,24 @@ void ReceptorDireccion_OnCapture(void)
 */
 void IntDireccion_OnInterrupt(void)
 {
-	static byte step_direccion = FREQ_PWM_DUTY/2; //Define el tiempo en ALTO
+	static byte step_direccion = FREQ_PWM_DUTY>>1; //Define el tiempo en ALTO
 	
 	if (pap.FLAG_DIRECCION){						//Esta habilitado el PWM de direccion?	
-		if (pap.pwm_direccion == 0){				
-			BitOut_DIR_PWM_SetVal();				//Salida en ALTO
-		}
-		if (pap.pwm_direccion == step_direccion){	//Ya paso el tiempo en alto?		
-			BitOut_DIR_PWM_ClrVal();				//Salida en BAJO
-		}
-		pap.pwm_direccion++;						//Incremento un step del PWM
-		if (pap.pwm_direccion == FREQ_PWM_DUTY){	//Cuando se alcanza el STEP de la frecuencia, reseteo
-			pap.pasos_dados++;						//Se realizo UN PASO
-			pap.pwm_direccion = 0;					//Reseteo el step
-		}
+		if (pap.direccion_lectura <= LIMITE_DIRECCION_DERECHO || pap.direccion_lectura >= LIMITE_DIRECCION_IZQUIERDO){
+			if (pap.pwm_direccion == 0){				
+				BitOut_DIR_PWM_SetVal();				//Salida en ALTO
+			}
+			if (pap.pwm_direccion == step_direccion){	//Ya paso el tiempo en alto?		
+				BitOut_DIR_PWM_ClrVal();				//Salida en BAJO
+			}
+			pap.pwm_direccion++;						//Incremento un step del PWM
+			if (pap.pwm_direccion == FREQ_PWM_DUTY){	//Cuando se alcanza el STEP de la frecuencia, reseteo
+				pap.pasos_dados++;						//Se realizo UN PASO
+				pap.pwm_direccion = 0;					//Reseteo el step
+			}
+		} else {
+			pap.FLAG_DIRECCION = false;
+		}		
 	} else {
 		pap.pasos_dados = 0;
 		BitOut_DIR_PWM_ClrVal();
@@ -469,11 +463,11 @@ void UART_MODBUS_OnError(void)
 */
 void UART_MODBUS_OnRxChar(void)
 {
-	UART_MODBUS_RecvChar(&rx_buf[rx_next]);
-	if (rx_buf[rx_next] == '\r'){
-		FLAG_RX = 1;
+	UART_MODBUS_RecvChar(&serie.rx_buf[serie.rx_next]);
+	if (serie.rx_buf[serie.rx_next] == '\n'){
+		serie.FLAG_RX = 1;
 	}
-	inc(rx_next);
+	inc(serie.rx_next);
 }
 
 /*
@@ -546,6 +540,64 @@ void UART_MODBUS_OnFreeTxBuf(void)
 void UART_MODBUS_OnTxComplete(void)
 {
   /* Write your code here ... */
+}
+
+/*
+** ===================================================================
+**     Event       :  Btn_Emergencia_OnInterrupt (module Events)
+**
+**     Component   :  Btn_Emergencia [ExtInt]
+**     Description :
+**         This event is called when an active signal edge/level has
+**         occurred.
+**     Parameters  : None
+**     Returns     : Nothing
+** ===================================================================
+*/
+void Btn_Emergencia_OnInterrupt(void)
+{
+  /* Write your code here ... */
+	emergencias++;
+	BitLed_Verde_ClrVal();
+	while(Btn_Emergencia_GetVal()){
+		Reset_PIDs(motor_di);
+		Reset_PIDs(motor_dd);
+		Reset_PIDs(motor_ti);
+		Reset_PIDs(motor_td);
+		motor_di.tension = 0;
+		motor_dd.tension = 0;
+		motor_ti.tension = 0;
+		motor_td.tension = 0;
+		motor_dd.control = 0;
+		motor_di.control = 0;
+		motor_td.control = 0;
+		motor_ti.control = 0;
+		RPM_SET = 0;
+		Out_PWM_TD_SetRatio16(DUTY_CERO);
+		Out_PWM_DD_SetRatio16(DUTY_CERO);
+		Out_PWM_DI_SetRatio16(DUTY_CERO);
+		Out_PWM_TI_SetRatio16(DUTY_CERO);
+	}
+	while(Btn_Emergencia_GetVal()){
+		Reset_PIDs(motor_di);
+		Reset_PIDs(motor_dd);
+		Reset_PIDs(motor_ti);
+		Reset_PIDs(motor_td);
+		motor_di.tension = 0;
+		motor_dd.tension = 0;
+		motor_ti.tension = 0;
+		motor_td.tension = 0;
+		motor_dd.control = 0;
+		motor_di.control = 0;
+		motor_td.control = 0;
+		motor_ti.control = 0;
+		RPM_SET = 0;
+		Out_PWM_TD_SetRatio16(DUTY_CERO);
+		Out_PWM_DD_SetRatio16(DUTY_CERO);
+		Out_PWM_DI_SetRatio16(DUTY_CERO);
+		Out_PWM_TI_SetRatio16(DUTY_CERO);
+	}
+	BitLed_Verde_SetVal();
 }
 
 /* END Events */
