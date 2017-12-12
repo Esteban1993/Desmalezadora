@@ -40,11 +40,9 @@ void Tension2Duty(MOTOR *motor_x);
 void Reset_PIDs(MOTOR motor_x);
 unsigned short GrayToBin(unsigned short N);
 void ResetVar (void);
-void RX (SERIE seriex, MOTOR *motordi, MOTOR *motordd, MOTOR *motortd, MOTOR *motorti, uint8 *ESTADO);
 void NumeroFin(SERIE *serie_x);
-MOTOR_TX TX_Motor(MOTOR motor_x);
-void Motor2Send(SERIE *serie, MOTOR_TX *motor);
 void GetEncoder(MOTOR *motor_x);
+void Duty2Motor(PC *pc, MOTOR *motor);
 
 
 

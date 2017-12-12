@@ -154,9 +154,6 @@ unsigned short GrayToBin(unsigned short N){
 void ResetVar (void){
 
 }
-void RX (SERIE seriex, MOTOR *motordi, MOTOR *motordd, MOTOR *motortd, MOTOR *motorti, uint8 *ESTADO){
-	
-}
 void NumeroFin(SERIE *serie_x){
 	unsigned char i;
 	i = 0;
@@ -166,25 +163,6 @@ void NumeroFin(SERIE *serie_x){
 		i++;
 	}
 	inc(serie_x->tx_next);	
-}
-MOTOR_TX TX_Motor(MOTOR motor_x){
-	MOTOR_TX tx;
-	tx.i = motor_x.adc;
-	tx.posicion = motor_x.posicion_pulsos;
-	tx.rpm = motor_x.rpm;
-	return tx;
-}
-void Motor2Send(SERIE *serie, MOTOR_TX *motor){
-	uint8 *p;
-	uint8 i;
-	i=0;
-	p = (uint8 *)motor;
-	while(i<=STRLEN_TXMOTOR-1){
-		serie->tx_buf[serie->tx_next] = *p;
-		inc(serie->tx_next);
-		p++;
-		i++;
-	}
 }
 void GetEncoder(MOTOR *motor_x){
 	bool val;
@@ -239,6 +217,21 @@ void GetEncoder(MOTOR *motor_x){
 			  }
 			  motor_x->Input.FLAG_E = false;
 		  }
+	}
+	
+}
+void Duty2Motor(PC *pc, MOTOR *motor){
+	pc->duty[motor->nro] =
+			(pc->duty[motor->nro] >= PC_LDUTYMAX) ?
+					PC_LDUTYMAX : pc->duty[motor->nro];
+	pc->duty[motor->nro] =
+			(pc->duty[motor->nro] <= PC_LDUTYMIN) ?
+					PC_LDUTYMIN : pc->duty[motor->nro];
+	if (pc->duty[motor->nro] == PC_LDUTYMIN) {
+		motor->duty = DUTY_CERO;
+	} else {
+		motor->duty = Mapeo(pc->duty[motor->nro], PC_LDUTYMIN, PC_LDUTYMAX,
+				DUTY_MIN, DUTY_MAX);
 	}
 	
 }

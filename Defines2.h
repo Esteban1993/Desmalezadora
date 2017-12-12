@@ -16,7 +16,6 @@
 #define LC_REMOTO				2
 #define LA_PC					3
 #define LC_PC					4
-#define PASOS					5
 #define PERDIDA_SENAL			10
 
 #define	MOTOR_DI				0
@@ -43,7 +42,7 @@
 #define REMOTO_DIR_CERO			150		
 #define REMOTO_DIR_MAX			205
 #define REMOTO_DIR_MIN			97
-#define VENTANA_DIRECCION		2
+#define VENTANA_DIRECCION		1
 
 #define K_PID					15	//33
 #define TI_PID					4	//NO ANDA, HAY QUE PONER 4 y DIVIDIR POR 10 CASTEANDO A FLOAT
@@ -59,7 +58,7 @@
 #define DUTY_CERO				65535
 
 
-#define SET_RPM_MAX				100		//definir
+#define SET_RPM_MAX				200		//definir
 #define SET_RPM_MIN				0
 
 #define U_MAX					19350
@@ -72,16 +71,18 @@
 #define ADC_MAX					3300
 #define BIT_16					65400
 #define GET_VEL(x)				(((x<<1)*1000*10)/FREQ_INPUT) //BOTH EDGE
-//#define GET_VEL(x)				(((x)*1000*10)/FREQ_INPUT) //rising EDGE
+//#define GET_VEL(x)			(((x)*1000*10)/FREQ_INPUT) //rising EDGE
 #define GET_RECEP(x)			(((x)*10000*10)/FREQ_RECEPTOR)
 #define RISING					0
 #define FALLING					1
 #define RETENCION_MS			2
 
+#define V0						0
+#define V33						3300
 #define MAX16BIT				65535
 #define MIN16BIT				0
 
-#define BUF_SIZE 				256
+#define BUF_SIZE 				128
 #define inc(x) 					{x++; x&=(BUF_SIZE-1);}
 
 #define FREQ_PWM_DUTY			2
@@ -94,7 +95,7 @@
 #define	DIRECCION_ANTI			BitOut_DIR_SENT_ClrVal()
 #define DIRECCION_ON			BitOut_DIR_EN_ClrVal()
 #define DIRECCION_OFF			BitOut_DIR_EN_SetVal()
-#define LIMITE_DIRECCION_DERECHO	238
+#define LIMITE_DIRECCION_DERECHO	240 //238
 #define DIRECCION_CENTRO			200
 #define LIMITE_DIRECCION_IZQUIERDO	160
 
@@ -102,5 +103,18 @@
 #define PC_LD						100
 #define PC_LDUTYMIN					0
 #define PC_LDUTYMAX					100
+
+#define TXABIERTO				'('
+#define TXCERRADO				')'
+#define TXDOSPUNTOS				':'
+#define TXSEPARADOR				','
+#define TXMENOS					'-'
+
+#define WD_ESTADO				1
+#define WD_PROGRAMA				2
+#define WD_CORRIENTE			4
+#define WD_TIMER				8
+#define WD_DIRECCION			16
+#define WD_CANTIDADBYTES		0b11111
 
 #endif /* DEFINES2_H_ */

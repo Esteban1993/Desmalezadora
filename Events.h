@@ -124,6 +124,8 @@
 #include "BitIoLdd18.h"
 #include "Encoder_TI.h"
 #include "BitIoLdd19.h"
+#include "WDog1.h"
+#include "WatchDogLdd1.h"
 
 #ifdef __cplusplus
 extern "C" {

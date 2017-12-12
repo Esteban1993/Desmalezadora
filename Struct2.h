@@ -113,15 +113,20 @@ typedef struct serie {
 	uint8 rx_read;  					// RX indice siguiente a LEERx
 	uint8 FLAG_RX;						//Hay datos para procesar RECIBIDOS
 	uint8 FLAG_TX;						//Hay datos para procesar ENVIAR
+	uint8 HAB_RX;						//Habilitar RX
+	uint8 HAB_TX;						//Habilitar TX
 } SERIE;
 
 typedef struct pc {
-	uint8 duty_global;            //Duty de Entrada PC 0 a 100
-	uint16 rpm_global;            //RPM de Entrada PC
+	uint8 duty_global;          //Duty de Entrada PC 0 a 100
+	uint8 duty[4];				//Duty de Entrada PC 0 a 100 INDIVIDUAL
+	uint16 rpm_global;          //RPM de Entrada PC
+	uint16 rpm[4];				//RPM de Entrada PC INDIVIDUAL
 	int8 direccion;				//Posicion Encoder
 	uint8 pap_ha;				//Habilita PAP
 	uint8 pap_en;				//Enable Driver
 	uint8 reversa;				//Posicion Encoder
+	uint8 ha_TX;				//Habilito Trasmicion
 } PC;
 
 

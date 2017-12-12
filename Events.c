@@ -66,10 +66,10 @@ extern byte FLAG_SW1;						//FLAG DEL PULSADOR 1
 extern byte FLAG_SW2;						//FLAG DEL PULSADOR 2
 extern word perdida_senal_remoto[2];		//Contador para detectar perdida de señal en modo REMOTO o CALIBRACION
 extern word cuenta_EMERGENCIA;
+extern uint16 cuenta_x2;						//Cuenta x2
 extern word cnt_aux;						//Cuenta AUXILIAR en interrupcion INTTIEMPO
 extern word cuenta_PID;						//Cuenta de tiempo PID
-extern word cuenta_RECIBIR;					//Cuenta de tiempo RECIBIR
-extern word cuenta_ENVIAR;					//Cuenta de tiempo ENVIAR
+extern word cuenta_RX;					//Cuenta de tiempo RECIBIR
 extern word cuenta_TX;						//Cuenta de tiempo RECIBIR
 extern word cuenta_DIRECCION;				//Cuenta para leer direccion
 extern byte FLAG_TIEMPO[4];					//FLAG de VELOCIDAD LEIDA
@@ -80,6 +80,9 @@ extern byte FLAG_TX;						//Hay datos para procesar ENVIAR
 
 extern uint16 emergencias;
 extern uint16 RPM_SET;
+
+
+extern uint16 WATCHDOG;				//FLAG DEL WATCHDOG
 
 
 // NUEVO
@@ -174,12 +177,13 @@ void Btn_SW1_OnInterrupt(void)
 void IntTiempo_OnInterrupt(void)
 {
 	byte i;	
+	WATCHDOG = WATCHDOG | WD_TIMER;
 	cnt_aux++;
-	cuenta_RECIBIR++;
-	cuenta_ENVIAR++;
 	cuenta_PID++;
 	cuenta_TX++;
+	cuenta_RX++;
 	cuenta_DIRECCION++;
+	cuenta_x2 = (cuenta_x2 <= 500) ? ++cuenta_x2 : 500;
 	motor_di.cuenta_vel_cero += 1;
 	motor_dd.cuenta_vel_cero += 1;
 	motor_ti.cuenta_vel_cero += 1;
@@ -464,8 +468,8 @@ void UART_MODBUS_OnError(void)
 void UART_MODBUS_OnRxChar(void)
 {
 	UART_MODBUS_RecvChar(&serie.rx_buf[serie.rx_next]);
-	if (serie.rx_buf[serie.rx_next] == '\n'){
-		serie.FLAG_RX = 1;
+	if (serie.rx_buf[serie.rx_next] == '\n' && serie.rx_buf[serie.rx_next - 1] == '\r'){
+		serie.FLAG_RX = true;
 	}
 	inc(serie.rx_next);
 }
@@ -559,7 +563,10 @@ void Btn_Emergencia_OnInterrupt(void)
   /* Write your code here ... */
 	emergencias++;
 	BitLed_Verde_ClrVal();
+	WDog1_Clear();
 	while(Btn_Emergencia_GetVal()){
+		WDog1_Clear();
+		FLAG_SW1 = 1;
 		Reset_PIDs(motor_di);
 		Reset_PIDs(motor_dd);
 		Reset_PIDs(motor_ti);
@@ -568,10 +575,14 @@ void Btn_Emergencia_OnInterrupt(void)
 		motor_dd.tension = 0;
 		motor_ti.tension = 0;
 		motor_td.tension = 0;
-		motor_dd.control = 0;
-		motor_di.control = 0;
-		motor_td.control = 0;
-		motor_ti.control = 0;
+		motor_dd.duty  = 0;
+		motor_di.duty  = 0;
+		motor_td.duty  = 0;
+		motor_ti.duty  = 0;
+		motor_dd.rpm  = 0;
+		motor_di.rpm  = 0;
+		motor_td.rpm  = 0;
+		motor_ti.rpm  = 0;
 		RPM_SET = 0;
 		Out_PWM_TD_SetRatio16(DUTY_CERO);
 		Out_PWM_DD_SetRatio16(DUTY_CERO);
@@ -579,6 +590,8 @@ void Btn_Emergencia_OnInterrupt(void)
 		Out_PWM_TI_SetRatio16(DUTY_CERO);
 	}
 	while(Btn_Emergencia_GetVal()){
+		WDog1_Clear();
+		FLAG_SW1 = 1;
 		Reset_PIDs(motor_di);
 		Reset_PIDs(motor_dd);
 		Reset_PIDs(motor_ti);
@@ -591,6 +604,14 @@ void Btn_Emergencia_OnInterrupt(void)
 		motor_di.control = 0;
 		motor_td.control = 0;
 		motor_ti.control = 0;
+		motor_dd.duty = 0;
+		motor_di.duty  = 0;
+		motor_td.duty  = 0;
+		motor_ti.duty  = 0;
+		motor_dd.rpm  = 0;
+		motor_di.rpm  = 0;
+		motor_td.rpm  = 0;
+		motor_ti.rpm  = 0;
 		RPM_SET = 0;
 		Out_PWM_TD_SetRatio16(DUTY_CERO);
 		Out_PWM_DD_SetRatio16(DUTY_CERO);
@@ -598,6 +619,7 @@ void Btn_Emergencia_OnInterrupt(void)
 		Out_PWM_TI_SetRatio16(DUTY_CERO);
 	}
 	BitLed_Verde_SetVal();
+	FLAG_SW1 = 1;
 }
 
 /* END Events */
