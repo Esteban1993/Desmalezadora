@@ -13,9 +13,13 @@
  */
 #define CALIBRACION				0
 #define LA_REMOTO				1
+#define DUTY_REMOTO				1
 #define LC_REMOTO				2
+#define RPM_REMOTO				2
 #define LA_PC					3
+#define DUTY_PC					3
 #define LC_PC					4
+#define RPM_PC					4
 #define PERDIDA_SENAL			10
 
 #define	MOTOR_DI				0

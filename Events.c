@@ -192,7 +192,7 @@ void IntTiempo_OnInterrupt(void)
 	motor_di.Input.tiempo = (motor_di.Input.FLAG_E) ? ++motor_di.Input.tiempo : 0;	//CUENTO SI BANDERA PULSO
 	motor_td.Input.tiempo = (motor_td.Input.FLAG_E) ? ++motor_td.Input.tiempo : 0;	//CUENTO SI BANDERA PULSO
 	motor_ti.Input.tiempo = (motor_ti.Input.FLAG_E) ? ++motor_ti.Input.tiempo : 0;	//CUENTO SI BANDERA PULSO
-	if (ESTADO == CALIBRACION || ESTADO == LC_REMOTO || ESTADO == LA_REMOTO){
+	if (ESTADO == CALIBRACION || ESTADO == RPM_REMOTO || ESTADO == DUTY_REMOTO){
 		velocidad.perdida_senal_remoto++;
 		direccion.perdida_senal_remoto++;
 	}

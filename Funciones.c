@@ -39,15 +39,9 @@ void GetVelocidad (MOTOR *motor_x){
 	if (motor_x->cuenta_vel_cero >= RESET_VELOCIDAD_MS){	//un pulso, se pone vel en cero										
 		motor_x->FLAG_TIEMPO = false;
 		motor_x->ms = 0;
-		motor_x->pulsos = 0;
 		motor_x->rpm = 0;
 		motor_x->cuenta_vel_cero = 0;
 		motor_x->Input.indices = 0;
-	}
-}
-void RPM_Cero(MOTOR *motor_x){
-	if (motor_x->rpm == 0 && motor_x->RPM_set == 0){ //1 segundo
-		motor_x->control = 0;
 	}
 }
 void Error_PID(MOTOR *motor_x){
@@ -114,7 +108,6 @@ unsigned char Tension_Cero(MOTOR motor_1, MOTOR motor_2, MOTOR motor_3, MOTOR mo
 	return 1;
 }
 void Tension2Duty(MOTOR *motor_x){
-	//%%%%%%%%%%%%%%%%%%%% VER QUE LA VARIABLE TENSION NO SEA NEGATIVA! %%%%%%%%%%%%%%%%%%%%%%%%%%%%!!!!!!!
 	motor_x->tension = (motor_x->tension >= U_MAX) ? U_MAX : motor_x->tension;	
 	motor_x->duty = (motor_x->tension != 0) ? Mapeo(motor_x->tension,U_MIN,U_MAX,DUTY_MIN,DUTY_MAX) : 65535;
 }
@@ -151,9 +144,6 @@ unsigned short GrayToBin(unsigned short N){
 	}
 	return N;
 }
-void ResetVar (void){
-
-}
 void NumeroFin(SERIE *serie_x){
 	unsigned char i;
 	i = 0;
@@ -164,7 +154,7 @@ void NumeroFin(SERIE *serie_x){
 	}
 	inc(serie_x->tx_next);	
 }
-void GetEncoder(MOTOR *motor_x){
+void GetHall(MOTOR *motor_x){
 	bool val;
 	switch (motor_x->nro){
 	case MOTOR_DI:
@@ -188,7 +178,6 @@ void GetEncoder(MOTOR *motor_x){
 				  if (val == true){
 					  motor_x->Input.datos[motor_x->Input.indices] = motor_x->Input.aux;
 					  motor_x->Input.indices++;
-					  motor_x->pulsos++;
 					  if (motor_x->Input.indices == 2){
 						  motor_x->Input.periodo = motor_x->Input.datos[1] - motor_x->Input.datos[0];
 						  motor_x->Input.datos[0] = motor_x->Input.datos[1];
@@ -203,7 +192,6 @@ void GetEncoder(MOTOR *motor_x){
 				  if (val == false){
 					  motor_x->Input.datos[motor_x->Input.indices] = motor_x->Input.aux;
 					  motor_x->Input.indices++;
-					  motor_x->pulsos++;
 					  if (motor_x->Input.indices == 2){
 						  motor_x->Input.periodo = motor_x->Input.datos[1] - motor_x->Input.datos[0];
 						  motor_x->Input.datos[0] = motor_x->Input.datos[1];

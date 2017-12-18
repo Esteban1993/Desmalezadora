@@ -63,11 +63,9 @@ typedef struct motor {
 	uint8 FLAG_TIEMPO;				//FLAG de VELOCIDAD LEIDA
 	uint32 posicion_pulsos;			//Contador de Flancos del Motor
 	uint16 cuenta_vel_cero;			//Contador para determinar Vel CERO si no se registran nuevos flancos
-	uint16 pulsos;
 	uint16 adc;						//Valores de los ADC de cada MOTOR
 	uint16 i;						//Valores de Corriente
 	uint16 ms;						//Velocidad en ms del encoder
-	uint16 ms_t;					//Velocidad en ms del encoder en T
 	uint16 rpm;						//Lectura RPM
 	uint16 RPM_set;					//SETPOINT DE RPM GLOBAL
 	int32 error_RPM;				//Entrada al PID [SETPOINT - LECTURA]
