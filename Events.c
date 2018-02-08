@@ -13,7 +13,7 @@
 **     Contents    :
 **         ADC_DD_OnEnd                 - void ADC_DD_OnEnd(void);
 **         ADC_DD_OnCalibrationEnd      - void ADC_DD_OnCalibrationEnd(void);
-**         Input_Encoder_DD_OnCapture            - void Input_Encoder_DD_OnCapture(void);
+**         Input_Hall_DD_OnCapture            - void Input_Hall_DD_OnCapture(void);
 **         IntEncoder_DD_OnInterrupt - void IntEncoder_DD_OnInterrupt(void);
 **         IntEncoder_DI_OnInterrupt - void IntEncoder_DI_OnInterrupt(void);
 **         Btn_SW2_OnInterrupt        - void Btn_SW2_OnInterrupt(void);
@@ -50,39 +50,24 @@ extern "C" {
  * ######################## VARIABLES GLOBALES ###############################
  */
 
-//ENVIAR Y RECIBIR
-extern byte tx_buf[BUF_SIZE];            	// TX buffer
-extern byte tx_next;						// TX indice siguiente a GUARDAR						
-extern byte tx_sent;					  	// TX indice siguiente a MANDAR
-extern byte rx_buf[BUF_SIZE];            	// RX buffer
-extern byte rx_next;						// RX indice siguiente a GUARDAR
-extern byte rx_read;  						// RX indice siguiente a LEER
-
 // FLAGS
 extern byte ESTADO;							//Indica el ESTADO del PROGRAMA
 extern byte FLAG_DIRECCION_PWM_EN;			//PASO A PASO ENEABLE
 extern byte FLAG_DIRECCION_SENTIDO;			//PASO A PASO SENTIDO DE GIRO
 extern byte FLAG_SW1;						//FLAG DEL PULSADOR 1
-extern byte FLAG_SW2;						//FLAG DEL PULSADOR 2
 extern word perdida_senal_remoto[2];		//Contador para detectar perdida de señal en modo REMOTO o CALIBRACION
-extern word cuenta_EMERGENCIA;
-extern uint16 cuenta_x2;						//Cuenta x2
+extern uint16 cuenta_x2;					//Cuenta x2
 extern word cnt_aux;						//Cuenta AUXILIAR en interrupcion INTTIEMPO
 extern word cuenta_PID;						//Cuenta de tiempo PID
-extern word cuenta_RX;					//Cuenta de tiempo RECIBIR
+extern word cuenta_RX;						//Cuenta de tiempo RECIBIR
 extern word cuenta_TX;						//Cuenta de tiempo RECIBIR
 extern word cuenta_DIRECCION;				//Cuenta para leer direccion
-extern byte FLAG_TIEMPO[4];					//FLAG de VELOCIDAD LEIDA
-extern byte FLAG_RECEPTOR[2];				//FLAG de ANCHO DE PULSO LEIDO REMOTO
 extern byte FLAG_ADC;						//FLAG de ADC TERMINO
-extern byte FLAG_RX;						//Hay datos para procesar RECIBIDOS
-extern byte FLAG_TX;						//Hay datos para procesar ENVIAR
 
-extern uint16 emergencias;
-extern uint16 RPM_SET;
+extern uint16 emergencias;					//Cuenta cantidad de llamadas a Emergencia
+extern uint16 RPM_SET;						//Setea RPM Global
 
-
-extern uint16 WATCHDOG;				//FLAG DEL WATCHDOG
+extern uint16 WATCHDOG;						//FLAG DEL WATCHDOG
 
 
 // NUEVO
@@ -104,9 +89,9 @@ extern SERIE serie;
 
 /*
 ** ===================================================================
-**     Event       :  Input_Encoder_DD_OnCapture (module Events)
+**     Event       :  Input_Hall_DD_OnCapture (module Events)
 **
-**     Component   :  Input_Encoder_DD [Capture]
+**     Component   :  Input_Hall_DD [Capture]
 **     Description :
 **         This event is called on capturing of Timer/Counter actual
 **         value (only when the component is enabled - <Enable> and the
@@ -116,10 +101,10 @@ extern SERIE serie;
 **     Returns     : Nothing
 ** ===================================================================
 */
-void Input_Encoder_DD_OnCapture(void)
+void Input_Hall_DD_OnCapture(void)
 {
 	if(!motor_dd.Input.FLAG_E){							//ESPERO PROCESAR VALOR
-		motor_dd.Input.err = Input_Encoder_DD_GetCaptureValue(&motor_dd.Input.aux);
+		motor_dd.Input.err = Input_Hall_DD_GetCaptureValue(&motor_dd.Input.aux);
 		motor_dd.Input.FLAG_E = TRUE;
 		motor_dd.Input.tiempo = 0;
 	}
@@ -219,9 +204,9 @@ void Cpu_OnNMI(void)
 
 /*
 ** ===================================================================
-**     Event       :  Input_Encoder_TD_OnCapture (module Events)
+**     Event       :  Input_Hall_TD_OnCapture (module Events)
 **
-**     Component   :  Input_Encoder_TD [Capture]
+**     Component   :  Input_Hall_TD [Capture]
 **     Description :
 **         This event is called on capturing of Timer/Counter actual
 **         value (only when the component is enabled - <Enable> and the
@@ -231,11 +216,11 @@ void Cpu_OnNMI(void)
 **     Returns     : Nothing
 ** ===================================================================
 */
-void Input_Encoder_TD_OnCapture(void)
+void Input_Hall_TD_OnCapture(void)
 {
   /* Write your code here ... */
 	if(!motor_td.Input.FLAG_E){							//ESPERO PROCESAR VALOR
-		motor_td.Input.err = Input_Encoder_TD_GetCaptureValue(&motor_td.Input.aux);
+		motor_td.Input.err = Input_Hall_TD_GetCaptureValue(&motor_td.Input.aux);
 		motor_td.Input.FLAG_E = TRUE;
 		motor_td.Input.tiempo = 0;
 	}
@@ -243,9 +228,9 @@ void Input_Encoder_TD_OnCapture(void)
 
 /*
 ** ===================================================================
-**     Event       :  Input_Encoder_DI_OnCapture (module Events)
+**     Event       :  Input_Hall_DI_OnCapture (module Events)
 **
-**     Component   :  Input_Encoder_DI [Capture]
+**     Component   :  Input_Hall_DI [Capture]
 **     Description :
 **         This event is called on capturing of Timer/Counter actual
 **         value (only when the component is enabled - <Enable> and the
@@ -255,10 +240,10 @@ void Input_Encoder_TD_OnCapture(void)
 **     Returns     : Nothing
 ** ===================================================================
 */
-void Input_Encoder_DI_OnCapture(void)
+void Input_Hall_DI_OnCapture(void)
 {
 	if(!motor_di.Input.FLAG_E){							//ESPERO PROCESAR VALOR
-		motor_di.Input.err = Input_Encoder_DI_GetCaptureValue(&motor_di.Input.aux);
+		motor_di.Input.err = Input_Hall_DI_GetCaptureValue(&motor_di.Input.aux);
 		motor_di.Input.FLAG_E = TRUE;
 		motor_di.Input.tiempo = 0;
 	}
@@ -266,9 +251,9 @@ void Input_Encoder_DI_OnCapture(void)
 
 /*
 ** ===================================================================
-**     Event       :  Input_Encoder_TI_OnCapture (module Events)
+**     Event       :  Input_Hall_TI_OnCapture (module Events)
 **
-**     Component   :  Input_Encoder_TI [Capture]
+**     Component   :  Input_Hall_TI [Capture]
 **     Description :
 **         This event is called on capturing of Timer/Counter actual
 **         value (only when the component is enabled - <Enable> and the
@@ -278,10 +263,10 @@ void Input_Encoder_DI_OnCapture(void)
 **     Returns     : Nothing
 ** ===================================================================
 */
-void Input_Encoder_TI_OnCapture(void)
+void Input_Hall_TI_OnCapture(void)
 {
 	if(!motor_ti.Input.FLAG_E){							//ESPERO PROCESAR VALOR
-		motor_ti.Input.err = Input_Encoder_TI_GetCaptureValue(&motor_ti.Input.aux);
+		motor_ti.Input.err = Input_Hall_TI_GetCaptureValue(&motor_ti.Input.aux);
 		motor_ti.Input.FLAG_E = TRUE;
 		motor_ti.Input.tiempo = 0;
 	}
@@ -417,14 +402,14 @@ void IntDireccion_OnInterrupt(void)
 			}
 			pap.pwm_direccion++;						//Incremento un step del PWM
 			if (pap.pwm_direccion == FREQ_PWM_DUTY){	//Cuando se alcanza el STEP de la frecuencia, reseteo
-				pap.pasos_dados++;						//Se realizo UN PASO
+				//pap.pasos_dados++;						//Se realizo UN PASO
 				pap.pwm_direccion = 0;					//Reseteo el step
 			}
 		} else {
 			pap.FLAG_DIRECCION = false;
 		}		
 	} else {
-		pap.pasos_dados = 0;
+		//pap.pasos_dados = 0;
 		BitOut_DIR_PWM_ClrVal();
 	}
   /* Write your code here ... */
@@ -432,9 +417,9 @@ void IntDireccion_OnInterrupt(void)
 
 /*
 ** ===================================================================
-**     Event       :  UART_MODBUS_OnError (module Events)
+**     Event       :  UART_OnError (module Events)
 **
-**     Component   :  UART_MODBUS [AsynchroSerial]
+**     Component   :  UART [AsynchroSerial]
 **     Description :
 **         This event is called when a channel error (not the error
 **         returned by a given method) occurs. The errors can be read
@@ -445,16 +430,16 @@ void IntDireccion_OnInterrupt(void)
 **     Returns     : Nothing
 ** ===================================================================
 */
-void UART_MODBUS_OnError(void)
+void UART_OnError(void)
 {
   /* Write your code here ... */
 }
 
 /*
 ** ===================================================================
-**     Event       :  UART_MODBUS_OnRxChar (module Events)
+**     Event       :  UART_OnRxChar (module Events)
 **
-**     Component   :  UART_MODBUS [AsynchroSerial]
+**     Component   :  UART [AsynchroSerial]
 **     Description :
 **         This event is called after a correct character is received.
 **         The event is available only when the <Interrupt
@@ -465,9 +450,9 @@ void UART_MODBUS_OnError(void)
 **     Returns     : Nothing
 ** ===================================================================
 */
-void UART_MODBUS_OnRxChar(void)
+void UART_OnRxChar(void)
 {
-	UART_MODBUS_RecvChar(&serie.rx_buf[serie.rx_next]);
+	UART_RecvChar(&serie.rx_buf[serie.rx_next]);
 	if (serie.rx_buf[serie.rx_next] == '\n' && serie.rx_buf[serie.rx_next - 1] == '\r'){
 		serie.FLAG_RX = true;
 	}
@@ -476,25 +461,25 @@ void UART_MODBUS_OnRxChar(void)
 
 /*
 ** ===================================================================
-**     Event       :  UART_MODBUS_OnTxChar (module Events)
+**     Event       :  UART_OnTxChar (module Events)
 **
-**     Component   :  UART_MODBUS [AsynchroSerial]
+**     Component   :  UART [AsynchroSerial]
 **     Description :
 **         This event is called after a character is transmitted.
 **     Parameters  : None
 **     Returns     : Nothing
 ** ===================================================================
 */
-void UART_MODBUS_OnTxChar(void)
+void UART_OnTxChar(void)
 {
   /* Write your code here ... */
 }
 
 /*
 ** ===================================================================
-**     Event       :  UART_MODBUS_OnFullRxBuf (module Events)
+**     Event       :  UART_OnFullRxBuf (module Events)
 **
-**     Component   :  UART_MODBUS [AsynchroSerial]
+**     Component   :  UART [AsynchroSerial]
 **     Description :
 **         This event is called when the input buffer is full;
 **         i.e. after reception of the last character 
@@ -503,16 +488,16 @@ void UART_MODBUS_OnTxChar(void)
 **     Returns     : Nothing
 ** ===================================================================
 */
-void UART_MODBUS_OnFullRxBuf(void)
+void UART_OnFullRxBuf(void)
 {
   /* Write your code here ... */
 }
 
 /*
 ** ===================================================================
-**     Event       :  UART_MODBUS_OnFreeTxBuf (module Events)
+**     Event       :  UART_OnFreeTxBuf (module Events)
 **
-**     Component   :  UART_MODBUS [AsynchroSerial]
+**     Component   :  UART [AsynchroSerial]
 **     Description :
 **         This event is called after the last character in output
 **         buffer is transmitted.
@@ -520,16 +505,16 @@ void UART_MODBUS_OnFullRxBuf(void)
 **     Returns     : Nothing
 ** ===================================================================
 */
-void UART_MODBUS_OnFreeTxBuf(void)
+void UART_OnFreeTxBuf(void)
 {
   /* Write your code here ... */
 }
 
 /*
 ** ===================================================================
-**     Event       :  UART_MODBUS_OnTxComplete (module Events)
+**     Event       :  UART_OnTxComplete (module Events)
 **
-**     Component   :  UART_MODBUS [AsynchroSerial]
+**     Component   :  UART [AsynchroSerial]
 **     Description :
 **         This event indicates that the transmitter is finished
 **         transmitting all data, preamble, and break characters and is
@@ -541,7 +526,7 @@ void UART_MODBUS_OnFreeTxBuf(void)
 **     Returns     : Nothing
 ** ===================================================================
 */
-void UART_MODBUS_OnTxComplete(void)
+void UART_OnTxComplete(void)
 {
   /* Write your code here ... */
 }
@@ -566,7 +551,6 @@ void Btn_Emergencia_OnInterrupt(void)
 	WDog1_Clear();
 	while(Btn_Emergencia_GetVal()){
 		WDog1_Clear();
-		FLAG_SW1 = 1;
 		Reset_PIDs(motor_di);
 		Reset_PIDs(motor_dd);
 		Reset_PIDs(motor_ti);
@@ -591,7 +575,6 @@ void Btn_Emergencia_OnInterrupt(void)
 	}
 	while(Btn_Emergencia_GetVal()){
 		WDog1_Clear();
-		FLAG_SW1 = 1;
 		Reset_PIDs(motor_di);
 		Reset_PIDs(motor_dd);
 		Reset_PIDs(motor_ti);
@@ -619,7 +602,6 @@ void Btn_Emergencia_OnInterrupt(void)
 		Out_PWM_TI_SetRatio16(DUTY_CERO);
 	}
 	BitLed_Verde_SetVal();
-	FLAG_SW1 = 1;
 }
 
 /* END Events */

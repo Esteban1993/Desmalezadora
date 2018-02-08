@@ -13,7 +13,7 @@
 **     Contents    :
 **         ADC_DD_OnEnd                 - void ADC_DD_OnEnd(void);
 **         ADC_DD_OnCalibrationEnd      - void ADC_DD_OnCalibrationEnd(void);
-**         Input_Encoder_DD_OnCapture            - void Input_Encoder_DD_OnCapture(void);
+**         Input_Hall_DD_OnCapture            - void Input_Hall_DD_OnCapture(void);
 **         IntEncoder_DD_OnInterrupt - void IntEncoder_DD_OnInterrupt(void);
 **         IntEncoder_DI_OnInterrupt - void IntEncoder_DI_OnInterrupt(void);
 **         Btn_SW2_OnInterrupt        - void Btn_SW2_OnInterrupt(void);
@@ -60,7 +60,7 @@
 #include "CtrlPID_TD.h"
 #include "Out_Reversa.h"
 #include "BitIoLdd5.h"
-#include "UART_MODBUS.h"
+#include "UART.h"
 #include "ASerialLdd2.h"
 #include "Btn_SW1.h"
 #include "ExtIntLdd3.h"
@@ -79,13 +79,13 @@
 #include "TPulsos.h"
 #include "Out_PWM_TI.h"
 #include "PwmLdd4.h"
-#include "Input_Encoder_DD.h"
+#include "Input_Hall_DD.h"
 #include "CaptureLdd1.h"
-#include "Input_Encoder_TD.h"
+#include "Input_Hall_TD.h"
 #include "CaptureLdd2.h"
-#include "Input_Encoder_TI.h"
+#include "Input_Hall_TI.h"
 #include "CaptureLdd3.h"
-#include "Input_Encoder_DI.h"
+#include "Input_Hall_DI.h"
 #include "CaptureLdd4.h"
 #include "BitOut_DIR_SENT.h"
 #include "BitIoLdd2.h"
@@ -116,13 +116,13 @@
 #include "BitIoLdd15.h"
 #include "Btn_Emergencia.h"
 #include "ExtIntLdd2.h"
-#include "Encoder_TD.h"
+#include "Hall_TD.h"
 #include "BitIoLdd16.h"
-#include "Encoder_DD.h"
+#include "Hall_DD.h"
 #include "BitIoLdd17.h"
-#include "Encoder_DI.h"
+#include "Hall_DI.h"
 #include "BitIoLdd18.h"
-#include "Encoder_TI.h"
+#include "Hall_TI.h"
 #include "BitIoLdd19.h"
 #include "WDog1.h"
 #include "WatchDogLdd1.h"
@@ -149,9 +149,9 @@ void ADC_DD_OnEnd(void);
 
 /*
 ** ===================================================================
-**     Event       :  Input_Encoder_DD_OnCapture (module Events)
+**     Event       :  Input_Hall_DD_OnCapture (module Events)
 **
-**     Component   :  Input_Encoder_DD [Capture]
+**     Component   :  Input_Hall_DD [Capture]
 **     Description :
 **         This event is called on capturing of Timer/Counter actual
 **         value (only when the component is enabled - <Enable> and the
@@ -161,7 +161,7 @@ void ADC_DD_OnEnd(void);
 **     Returns     : Nothing
 ** ===================================================================
 */
-void Input_Encoder_DD_OnCapture(void);
+void Input_Hall_DD_OnCapture(void);
 
 void Btn_SW2_OnInterrupt(void);
 /*
@@ -225,9 +225,9 @@ void Cpu_OnNMI(void);
 
 /*
 ** ===================================================================
-**     Event       :  Input_Encoder_TD_OnCapture (module Events)
+**     Event       :  Input_Hall_TD_OnCapture (module Events)
 **
-**     Component   :  Input_Encoder_TD [Capture]
+**     Component   :  Input_Hall_TD [Capture]
 **     Description :
 **         This event is called on capturing of Timer/Counter actual
 **         value (only when the component is enabled - <Enable> and the
@@ -237,13 +237,13 @@ void Cpu_OnNMI(void);
 **     Returns     : Nothing
 ** ===================================================================
 */
-void Input_Encoder_TD_OnCapture(void);
+void Input_Hall_TD_OnCapture(void);
 
 /*
 ** ===================================================================
-**     Event       :  Input_Encoder_DI_OnCapture (module Events)
+**     Event       :  Input_Hall_DI_OnCapture (module Events)
 **
-**     Component   :  Input_Encoder_DI [Capture]
+**     Component   :  Input_Hall_DI [Capture]
 **     Description :
 **         This event is called on capturing of Timer/Counter actual
 **         value (only when the component is enabled - <Enable> and the
@@ -253,13 +253,13 @@ void Input_Encoder_TD_OnCapture(void);
 **     Returns     : Nothing
 ** ===================================================================
 */
-void Input_Encoder_DI_OnCapture(void);
+void Input_Hall_DI_OnCapture(void);
 
 /*
 ** ===================================================================
-**     Event       :  Input_Encoder_TI_OnCapture (module Events)
+**     Event       :  Input_Hall_TI_OnCapture (module Events)
 **
-**     Component   :  Input_Encoder_TI [Capture]
+**     Component   :  Input_Hall_TI [Capture]
 **     Description :
 **         This event is called on capturing of Timer/Counter actual
 **         value (only when the component is enabled - <Enable> and the
@@ -269,7 +269,7 @@ void Input_Encoder_DI_OnCapture(void);
 **     Returns     : Nothing
 ** ===================================================================
 */
-void Input_Encoder_TI_OnCapture(void);
+void Input_Hall_TI_OnCapture(void);
 
 void ADC_I_OnEnd(void);
 /*
@@ -353,9 +353,9 @@ void IntDireccion_OnInterrupt(void);
 
 /*
 ** ===================================================================
-**     Event       :  UART_MODBUS_OnError (module Events)
+**     Event       :  UART_OnError (module Events)
 **
-**     Component   :  UART_MODBUS [AsynchroSerial]
+**     Component   :  UART [AsynchroSerial]
 **     Description :
 **         This event is called when a channel error (not the error
 **         returned by a given method) occurs. The errors can be read
@@ -366,13 +366,13 @@ void IntDireccion_OnInterrupt(void);
 **     Returns     : Nothing
 ** ===================================================================
 */
-void UART_MODBUS_OnError(void);
+void UART_OnError(void);
 
 /*
 ** ===================================================================
-**     Event       :  UART_MODBUS_OnRxChar (module Events)
+**     Event       :  UART_OnRxChar (module Events)
 **
-**     Component   :  UART_MODBUS [AsynchroSerial]
+**     Component   :  UART [AsynchroSerial]
 **     Description :
 **         This event is called after a correct character is received.
 **         The event is available only when the <Interrupt
@@ -383,26 +383,26 @@ void UART_MODBUS_OnError(void);
 **     Returns     : Nothing
 ** ===================================================================
 */
-void UART_MODBUS_OnRxChar(void);
+void UART_OnRxChar(void);
 
 /*
 ** ===================================================================
-**     Event       :  UART_MODBUS_OnTxChar (module Events)
+**     Event       :  UART_OnTxChar (module Events)
 **
-**     Component   :  UART_MODBUS [AsynchroSerial]
+**     Component   :  UART [AsynchroSerial]
 **     Description :
 **         This event is called after a character is transmitted.
 **     Parameters  : None
 **     Returns     : Nothing
 ** ===================================================================
 */
-void UART_MODBUS_OnTxChar(void);
+void UART_OnTxChar(void);
 
 /*
 ** ===================================================================
-**     Event       :  UART_MODBUS_OnFullRxBuf (module Events)
+**     Event       :  UART_OnFullRxBuf (module Events)
 **
-**     Component   :  UART_MODBUS [AsynchroSerial]
+**     Component   :  UART [AsynchroSerial]
 **     Description :
 **         This event is called when the input buffer is full;
 **         i.e. after reception of the last character 
@@ -411,13 +411,13 @@ void UART_MODBUS_OnTxChar(void);
 **     Returns     : Nothing
 ** ===================================================================
 */
-void UART_MODBUS_OnFullRxBuf(void);
+void UART_OnFullRxBuf(void);
 
 /*
 ** ===================================================================
-**     Event       :  UART_MODBUS_OnFreeTxBuf (module Events)
+**     Event       :  UART_OnFreeTxBuf (module Events)
 **
-**     Component   :  UART_MODBUS [AsynchroSerial]
+**     Component   :  UART [AsynchroSerial]
 **     Description :
 **         This event is called after the last character in output
 **         buffer is transmitted.
@@ -425,13 +425,13 @@ void UART_MODBUS_OnFullRxBuf(void);
 **     Returns     : Nothing
 ** ===================================================================
 */
-void UART_MODBUS_OnFreeTxBuf(void);
+void UART_OnFreeTxBuf(void);
 
 /*
 ** ===================================================================
-**     Event       :  UART_MODBUS_OnTxComplete (module Events)
+**     Event       :  UART_OnTxComplete (module Events)
 **
-**     Component   :  UART_MODBUS [AsynchroSerial]
+**     Component   :  UART [AsynchroSerial]
 **     Description :
 **         This event indicates that the transmitter is finished
 **         transmitting all data, preamble, and break characters and is
@@ -443,7 +443,7 @@ void UART_MODBUS_OnFreeTxBuf(void);
 **     Returns     : Nothing
 ** ===================================================================
 */
-void UART_MODBUS_OnTxComplete(void);
+void UART_OnTxComplete(void);
 
 void Btn_Emergencia_OnInterrupt(void);
 /*

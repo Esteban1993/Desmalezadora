@@ -69,7 +69,7 @@
 #define U_MIN					0
 
 #define RPM_STEP				5000//5
-#define FREQ_INPUT				374912
+#define FREQ_INPUT				32768//374912
 #define FREQ_RECEPTOR			2999296
 #define ADC_MIN					0
 #define ADC_MAX					3300

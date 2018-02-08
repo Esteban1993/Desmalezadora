@@ -27,16 +27,24 @@ void Get_Remoto(REMOTO *remoto_x){
 	}
 }
 void GetVelocidad (MOTOR *motor_x){
-	if (motor_x->FLAG_TIEMPO){
-		motor_x->FLAG_TIEMPO = false;
-		motor_x->ms = GET_VEL(motor_x->Input.periodo);
+	if (motor_x->FLAG_TIEMPO){							//FLAG DE TIEMPO?
+		motor_x->FLAG_TIEMPO = false;					//RESET FLAG DE TIEMPO
+		motor_x->ms = GET_VEL(motor_x->Input.periodo);	//PASAJE DEL ANCHO DEL PULSO EN MUESTRAS A TIEMPO
+		/*
+		 * Pasaje de MILISEGUNDOS a RPM
+		 */
 		if (motor_x->ms == 0){
 			motor_x->rpm = 0;			
 		} else {
-			motor_x->rpm = 60000/(motor_x->ms/10*24);			
+			motor_x->rpm = 60000/(motor_x->ms/10*24);	
 		}
 	}
-	if (motor_x->cuenta_vel_cero >= RESET_VELOCIDAD_MS){	//un pulso, se pone vel en cero										
+	/*
+	 * Si no se obtuvo una señal del Sensor HALL por mas de "RESET_VELOCIDAD_MS" de milisegundos,
+	 * detecta que la rueda esta detenida y setea los valores de velocidad a cero junto al indice
+	 * utilizado para el calculo del periodo de la señal de velocidad.
+	 */
+	if (motor_x->cuenta_vel_cero >= RESET_VELOCIDAD_MS){									
 		motor_x->FLAG_TIEMPO = false;
 		motor_x->ms = 0;
 		motor_x->rpm = 0;
@@ -45,17 +53,14 @@ void GetVelocidad (MOTOR *motor_x){
 	}
 }
 void Error_PID(MOTOR *motor_x){
-	motor_x->error_RPM = (motor_x->RPM_set - motor_x->rpm);
+	motor_x->error_RPM = (motor_x->RPM_set - motor_x->rpm);		//CALCULO DEL ERROR DE VELOCIDAD
+	/*
+	 * Existen errores esporadicos en las lecturas de velocidad las cuales generan valores de error de velocidad altos.
+	 * Estos errores generan en el control PID un cambio de signo de la variable controlada, lo que produce que el sistema se inestabilice.
+	 * Para evitarlo, se implemento un maximo de error admitido, es decir, una saturacion en la entrada del control PID de 50 RPM.
+	 */
 	motor_x->error_RPM = (motor_x->error_RPM >= 50) ? 50 : motor_x->error_RPM;
 	motor_x->error_RPM = (motor_x->error_RPM <= -50) ? -50 : motor_x->error_RPM;
-	/*
-	if (motor_x->RPM_set < 10){
-		motor_x->k = K_PID/2;
-	} else {
-		motor_x->k = K_PID;
-	}
-	*/
-	//TI = 0.5352609
 }
 void CtrlPID_SetK(MOTOR motor_x){
 	switch (motor_x.nro){
@@ -154,67 +159,73 @@ void NumeroFin(SERIE *serie_x){
 	}
 	inc(serie_x->tx_next);	
 }
+/*
+ * Realiza la validación de las muestras adquiridas por las
+ * 	interrupciones que capturan los flancos ascendentes y
+ * 	descendentes de los sensores Hall.
+ * De validar dos muestras, obtiene la diferencia que existe
+ * 	entre los dos flancos y da aviso de un valor nuevo
+ */
 void GetHall(MOTOR *motor_x){
 	bool val;
-	switch (motor_x->nro){
+	/*
+	 * Segun sea el motor ingresado, capturara el valor de la entrada HALL que corresponda.
+	 */
+	switch (motor_x->nro){	//TOMAR VALOR DE LA ENTRADA HALL Y RETENERLO(ALTO O BAJO)
 	case MOTOR_DI:
-		val = Encoder_DI_GetVal();
+		val = Hall_DI_GetVal();
 		break;
 	case MOTOR_DD:
-		val = Encoder_DD_GetVal();	
+		val = Hall_DD_GetVal();	
 		break;
 	case MOTOR_TD:
-		val = Encoder_TD_GetVal();
+		val = Hall_TD_GetVal();
 		break;
 	case MOTOR_TI:
-		val = Encoder_TI_GetVal();
+		val = Hall_TI_GetVal();
 		break;
 	default:
 		break;
 	}	
-	if(motor_x->Input.tiempo >= RETENCION_MS){						//ESPERO UN TIEMPO UNA VEZ RECIBIDO UN PULSO
-		  if (motor_x->Input.FLAG_E){						//BANDERA DE UN PULSO
-			  if( motor_x->Input.edge == RISING){
-				  if (val == true){
-					  motor_x->Input.datos[motor_x->Input.indices] = motor_x->Input.aux;
-					  motor_x->Input.indices++;
-					  if (motor_x->Input.indices == 2){
-						  motor_x->Input.periodo = motor_x->Input.datos[1] - motor_x->Input.datos[0];
-						  motor_x->Input.datos[0] = motor_x->Input.datos[1];
-						  motor_x->Input.indices = 1;
-						  motor_x->FLAG_TIEMPO = 1;
-						  motor_x->posicion_pulsos++;
-						  motor_x->cuenta_vel_cero = 0;
+	if(motor_x->Input.tiempo >= RETENCION_MS){			//ESPERO UN TIEMPO UNA VEZ RECIBIDO UN PULSO
+		  if (motor_x->Input.FLAG_E){					//BANDERA DE UN PULSO NUEVO?
+			  if( motor_x->Input.edge == RISING){		//FLANCO DE SUBIDA?
+				  if (val == true){						//ESTADO DE LA ENTRADA QUE SE RETUVO ALTO?
+					  motor_x->Input.datos[motor_x->Input.indices] = motor_x->Input.aux;	//MUESTRAS CAPTURADAS. VALIDACION OK
+					  motor_x->Input.indices++;												//INCREMENTO DEL INDICE
+					  if (motor_x->Input.indices == 2){										//DOS MUESTRAS CAPTURADAS?										
+						  motor_x->Input.periodo = motor_x->Input.datos[1] - motor_x->Input.datos[0];	//DIFERENCIA DE MUESTRAS CAPTURADAS
+						  motor_x->Input.datos[0] = motor_x->Input.datos[1];							//RELEVO DE MUESTRAS
+						  motor_x->Input.indices = 1;					//INDICE EN UNO. MUESTRA ANTERIOR
+						  motor_x->FLAG_TIEMPO = 1;						//FLAG TIEMPO EN ALTO
+						  motor_x->posicion_pulsos++;					//INCREMENTO DE VARIABLE DE PULSOS
+						  motor_x->cuenta_vel_cero = 0;					//RESET SEGURIDAD VELOCIDAD CERO
 					  }
-					  motor_x->Input.edge = FALLING;
+					  motor_x->Input.edge = FALLING;					//SETEAR FLANCO ESPERADO: BAJADA
 				  }
-			  } else { //CUANDO ES FALLING
+			  } else {									//FLANCO DE BAJADA?
 				  if (val == false){
 					  motor_x->Input.datos[motor_x->Input.indices] = motor_x->Input.aux;
 					  motor_x->Input.indices++;
 					  if (motor_x->Input.indices == 2){
-						  motor_x->Input.periodo = motor_x->Input.datos[1] - motor_x->Input.datos[0];
-						  motor_x->Input.datos[0] = motor_x->Input.datos[1];
-						  motor_x->Input.indices = 1;
-						  motor_x->FLAG_TIEMPO = 1;
-						  motor_x->posicion_pulsos++;
-						  motor_x->cuenta_vel_cero = 0;
+						  motor_x->Input.periodo = motor_x->Input.datos[1] - motor_x->Input.datos[0];	//DIFERENCIA DE MUESTRAS CAPTURADAS
+						  motor_x->Input.datos[0] = motor_x->Input.datos[1];							//RELEVO DE MUESTRAS
+						  motor_x->Input.indices = 1;					//INDICE EN UNO. MUESTRA ANTERIOR
+						  motor_x->FLAG_TIEMPO = 1;						//FLAG TIEMPO EN ALTO
+						  motor_x->posicion_pulsos++;					//INCREMENTO DE VARIABLE DE PULSOS
+						  motor_x->cuenta_vel_cero = 0;					//RESET SEGURIDAD VELOCIDAD CERO
 					  }
-					  motor_x->Input.edge = RISING;
+					  motor_x->Input.edge = RISING;						//SETEAR FLANCO ESPERADO: SUBIDA
 				  }
 			  }
-			  motor_x->Input.FLAG_E = false;
+			  motor_x->Input.FLAG_E = false;		//BAJO BANDERA DE PULSO
 		  }
 	}
 	
 }
 void Duty2Motor(PC *pc, MOTOR *motor){
-	pc->duty[motor->nro] =
-			(pc->duty[motor->nro] >= PC_LDUTYMAX) ?
-					PC_LDUTYMAX : pc->duty[motor->nro];
-	pc->duty[motor->nro] =
-			(pc->duty[motor->nro] <= PC_LDUTYMIN) ?
-					PC_LDUTYMIN : pc->duty[motor->nro];
+	pc->duty[motor->nro] = (pc->duty[motor->nro] >= PC_LDUTYMAX) ? PC_LDUTYMAX : pc->duty[motor->nro];
+	pc->duty[motor->nro] = (pc->duty[motor->nro] <= PC_LDUTYMIN) ? PC_LDUTYMIN : pc->duty[motor->nro];
 	if (pc->duty[motor->nro] == PC_LDUTYMIN) {
 		motor->duty = DUTY_CERO;
 	} else {

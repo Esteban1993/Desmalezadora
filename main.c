@@ -47,7 +47,7 @@
 #include "CtrlPID_TD.h"
 #include "Out_Reversa.h"
 #include "BitIoLdd5.h"
-#include "UART_MODBUS.h"
+#include "UART.h"
 #include "ASerialLdd2.h"
 #include "Btn_SW1.h"
 #include "ExtIntLdd3.h"
@@ -67,13 +67,13 @@
 #include "TPulsos.h"
 #include "Out_PWM_TI.h"
 #include "PwmLdd4.h"
-#include "Input_Encoder_DD.h"
+#include "Input_Hall_DD.h"
 #include "CaptureLdd1.h"
-#include "Input_Encoder_TD.h"
+#include "Input_Hall_TD.h"
 #include "CaptureLdd2.h"
-#include "Input_Encoder_TI.h"
+#include "Input_Hall_TI.h"
 #include "CaptureLdd3.h"
-#include "Input_Encoder_DI.h"
+#include "Input_Hall_DI.h"
 #include "CaptureLdd4.h"
 #include "BitOut_DIR_SENT.h"
 #include "BitIoLdd2.h"
@@ -104,13 +104,13 @@
 #include "BitIoLdd15.h"
 #include "Btn_Emergencia.h"
 #include "ExtIntLdd2.h"
-#include "Encoder_TD.h"
+#include "Hall_TD.h"
 #include "BitIoLdd16.h"
-#include "Encoder_DD.h"
+#include "Hall_DD.h"
 #include "BitIoLdd17.h"
-#include "Encoder_DI.h"
+#include "Hall_DI.h"
 #include "BitIoLdd18.h"
-#include "Encoder_TI.h"
+#include "Hall_TI.h"
 #include "BitIoLdd19.h"
 #include "WDog1.h"
 #include "WatchDogLdd1.h"
@@ -135,7 +135,6 @@ void set_direccion(void);
 void set_x2(void);
 void pulsador(void);
 void led_aux(void);
-
 void Init(void);
 void GetCorriente(void);
 void GetDireccion(PAP *pap_x);
@@ -153,51 +152,39 @@ void RX(void);
 byte ESTADO;						//Indica el ESTADO del PROGRAMA
 byte ESTADOANTERIOR;				//Indica el ESTADO del PROGRAMA ANTERIOR
 uint16 WATCHDOG = 0;				//FLAG DEL WATCHDOG
-int8 TEMPERATURA;
 byte FLAG_SW1;						//FLAG DEL PULSADOR 1
-byte FLAG_SW2;						//FLAG DEL PULSADOR 2
-word cuenta_EMERGENCIA;
 word cnt_aux;						//Cuenta AUXILIAR en interrupcion INTTIEMPO
 uint16 cuenta_x2 = 0;				//Cuenta x2
 word cuenta_PID;					//Cuenta de tiempo PID
-word cuenta_RX;				//Cuenta de tiempo RECIBIR
+word cuenta_RX;						//Cuenta de tiempo RECIBIR
 word cuenta_TX;						//Cuenta de tiempo RECIBIR
 word cuenta_DIRECCION = 0;			//Cuenta para leer direccion
-byte FLAG_TIEMPO[4];				//FLAG de VELOCIDAD LEIDA
-byte FLAG_RECEPTOR[2];				//FLAG de ANCHO DE PULSO LEIDO REMOTO
 byte FLAG_ADC;						//FLAG de ADC TERMINO
-byte FLAG_RX;						//Hay datos para procesar RECIBIDOS
-byte FLAG_TX;						//Hay datos para procesar ENVIAR
-
-// DIRECCION PWM
-byte pwm_direccion;					//Contador para el PWM Manual
-word pwm_pasos;						//Cantidad de PASOS que se ha dado
 
 // ######################## VARIABLES INTERNAS ###############################
 
-bool cambio_estado;			//Cuando se cambia de estado, sirve para ejecutar 
-							//una porcion de codigo por unica vez
+bool cambio_estado;					//Cuando se cambia de estado, sirve para ejecutar 
+									//una porcion de codigo por unica vez
 
 uint16 emergencias = 0;				//Cuenta las entradas a emergencia
 
 word RPM_SET = 0;					//Setpoint RPM Global
-word DUTY_SET = 0;				//Setpoint TENSION Global
-bool sentido_ant;		//Sentido anterior de GIRO MOTOR 			1-REVERSA
-bool sentido_act;		//Sentido actual que se desea GIRAR MOTOR 	1-REVERSA
-byte sentido_entrada;	//Sentido de GIRO MOTOR desde la PC 		1-REVERSA
+word DUTY_SET = 0;					//Setpoint TENSION Global
+bool sentido_ant;					//Sentido anterior de GIRO MOTOR 			1-REVERSA
+bool sentido_act;					//Sentido actual que se desea GIRAR MOTOR 	1-REVERSA
 
-uint8 x2 = false;
+uint8 x2 = false;					//Determina si esta activa la traccion SOLO con DOS RUEDAS
 
-uint16 rpm_max_control;				//Setea el MAXIMO de RPM que se puede aplicar en MODO REMOTO LC
-uint16 duty_max_control = DUTY_MAX;	//Setea el MAXIMO de DUTY que se puede aplicar en MODO REMOTO LA
+uint16 rpm_max_control = 40;				//Setea el MAXIMO de RPM que se puede aplicar en MODO REMOTO RPM
+uint16 duty_max_control = DUTY_MAX;	//Setea el MAXIMO de DUTY que se puede aplicar en MODO REMOTO DUTY
 
-byte FLAG_PASOS;				//FLAG usada en el ESTADO PASOS
-byte FLAG_DIRECCION = false;//FLAG usado para definir cuando hay una seÃ±al de direccion
+byte FLAG_PASOS;					//FLAG usada en el ESTADO PASOS
+byte FLAG_DIRECCION = false;		//FLAG usado para definir cuando hay una seÃ±al de direccion
 
-word tension_global = 0;
-word duty_global = DUTY_CERO;
+word tension_global = 0;			//Tension aplicable a todas las ruedas
+word duty_global = DUTY_CERO;		//Duty aplicable a todas las ruedas
 
-//######################NUEVO!
+//###################### INICIALIZACIÓN DE LOS STRUCT ###############################
 
 MOTOR motor_di = { MOTOR_DI, { MOTOR_DI, { 0, 0 }, 0, 0, 0, RISING, 0, 0, 0 }, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, K_PID, 0, TI_PID, 0, DUTY_CERO, 0 };
 MOTOR motor_dd = { MOTOR_DD, { MOTOR_DD, { 0, 0 }, 0, 0, 0, RISING, 0, 0, 0 }, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, K_PID, 0, TI_PID, 0, DUTY_CERO, 0 };
@@ -219,8 +206,6 @@ int main(void)
 /*lint -restore Enable MISRA rule (6.3) checking. */
 
 {
-	byte i;
-	byte x;
 	//LDD_TDeviceData *DeviceDataPtr;
 
 	/* Write your local variable definition here */
@@ -241,29 +226,26 @@ int main(void)
 	CtrlPID_TD_Set_Ti((float) (motor_td.ti / 10));
 	CtrlPID_TI_Set_K((float) motor_ti.k);
 	CtrlPID_TI_Set_Ti((float) (motor_ti.ti / 10));
-	//
 	//#######################################
 	/*
-	while (ADC_I_Calibrate(TRUE) == ERR_BUSY) {
-	}
 	*/
 	Init();
 	for (;;) {
-		WATCHDOG = WATCHDOG | WD_PROGRAMA;
-		if (ESTADO != ESTADOANTERIOR) {			
+		WATCHDOG = WATCHDOG | WD_PROGRAMA;			//WATCHDOG DEL PROGRAMA
+		if (ESTADO != ESTADOANTERIOR) {				//HUBO CAMBIO DE ESTADO?
 			cambio_estado = true;
 		}
 		//INICIO
-		GetDireccion(&pap);					//LEER DIRECCION
-		GetHall(&motor_dd);
-		GetHall(&motor_di);
-		GetHall(&motor_td);
-		GetHall(&motor_ti);
-		GetVelocidad(&motor_dd);
-		GetVelocidad(&motor_di);
-		GetVelocidad(&motor_td);
-		GetVelocidad(&motor_ti);
-		GetCorriente();
+		GetDireccion(&pap);							//LEER DIRECCION
+		GetHall(&motor_dd);							//LEER HALL MOTOR DD
+		GetHall(&motor_di);							//LEER HALL MOTOR DI
+		GetHall(&motor_td);							//LEER HALL MOTOR TD
+		GetHall(&motor_ti);							//LEER HALL MOTOR TI
+		GetVelocidad(&motor_dd);					//LEER VELOCIDAD MOTOR DD
+		GetVelocidad(&motor_di);					//LEER VELOCIDAD MOTOR DI
+		GetVelocidad(&motor_td);					//LEER VELOCIDAD MOTOR TD
+		GetVelocidad(&motor_ti);					//LEER VELOCIDAD MOTOR TI
+		GetCorriente();								//LEER CORRIENTE
 
 		switch (ESTADO) {
 		case DUTY_REMOTO:
@@ -289,7 +271,7 @@ int main(void)
 			break;
 		}
 		//DUTY MOTORES
-		set_x2();											//Cambio a traccion con las 2 ruedas traseras
+		set_x2();									//Cambio a traccion con las 2 ruedas traseras
 		SetDuty(motor_dd);
 		SetDuty(motor_di);
 		SetDuty(motor_td);
@@ -344,6 +326,9 @@ int main(void)
  ** ###################################################################
  */
 void Init(void){
+	/*
+	 * Inicializar variblaes del programa
+	 */
 	ADC_I_Measure(FALSE);
 	DIRECCION_ON;
 	ESTADO = CALIBRACION;
@@ -357,8 +342,13 @@ void Init(void){
 }
 void GetCorriente(void) {
 	uint16 value[4];
-	if (FLAG_ADC) {
-		FLAG_ADC = false;
+	if (FLAG_ADC) {			//Conversión Completa del ADC
+		FLAG_ADC = false;	//Reset Flag ADC
+		/*
+		 * Lectura de cada uno de los canales del ADC.
+		 * Conversión a Corriente. Pasaje de valores de 16 bits
+		 * a valores de Corriente
+		 */
 		ADC_I_GetChanValue16(MOTOR_DI,&motor_di.adc);
 		ADC_I_GetChanValue16(MOTOR_DD,&motor_dd.adc);
 		ADC_I_GetChanValue16(MOTOR_TD,&motor_td.adc);
@@ -372,6 +362,11 @@ void GetCorriente(void) {
 	WATCHDOG = WATCHDOG | WD_CORRIENTE;
 }
 void GetDireccion(PAP *pap_x) {
+	/*
+	 * Lectura de la direccion
+	 * Leer las 8 entradas, concatenarlas y decodificiarlas
+	 * 	a binario y tomar lectura de la posición del Encoder
+	 */
 	byte lectura;
 	byte z;
 	lectura = 0;
@@ -402,6 +397,10 @@ void GetDireccion(PAP *pap_x) {
 	WATCHDOG = WATCHDOG | WD_DIRECCION;
 }
 void SetDuty(MOTOR motor_x) {
+	/*
+	 * Setear DUTY CYCLE del PWM correspondiente
+	 * 	al driver de cada motor
+	 */
 	switch (motor_x.nro) {
 	case MOTOR_DI:
 		Out_PWM_DI_SetRatio16(motor_x.duty);
@@ -421,10 +420,18 @@ void SetDuty(MOTOR motor_x) {
 }
 
 void TX(SERIE *serie_x) {
+	/*
+	 * Inicializar variables utilizadas en la trasmición
+	 */
 	word *SND;
 	word snd;
 	SND = &snd;
 	snd = 0;
+	/*
+	 * Verificar que esta habilitada la trasmición
+	 * Realizar la codificacion de los datos del Motor
+	 * 	,concatenarlos en un String y enviarlos.
+	 */
 	serie.HAB_TX = (pc.ha_TX >= 1) ? 1 : pc.ha_TX;
 	if (cuenta_TX >= 100 && serie.HAB_TX) {
 		TEXT_strcpy(serie.tx_buf, sizeof(serie.tx_buf),(unsigned char*) "(");
@@ -446,13 +453,15 @@ void TX(SERIE *serie_x) {
 	}
 	if (serie_x->FLAG_TX) {
 		serie_x->FLAG_TX = false;
-		UART_MODBUS_SendBlock(serie_x->tx_buf,
-				(word) (serie_x->tx_next - serie_x->tx_sent), SND);
+		UART_SendBlock(serie_x->tx_buf,(word) (serie_x->tx_next - serie_x->tx_sent), SND);
 		serie_x->tx_next = 0;
 		serie_x->tx_sent = 0;
 	}
 }
 void StrcatMotor(MOTOR motor_x){
+	/*
+	 * Pasa los datos del motor a un String
+	 */
 	TEXT_strcatNum8u(serie.tx_buf, sizeof(serie.tx_buf),
 			(word) motor_x.nro);
 	TEXT_chcat(serie.tx_buf, sizeof(serie.tx_buf), TXSEPARADOR);
@@ -467,6 +476,10 @@ void StrcatMotor(MOTOR motor_x){
 	TEXT_chcat(serie.tx_buf, sizeof(serie.tx_buf), TXSEPARADOR);	
 }
 void RX(void){
+	/*
+	 * Inicializar variables utilizadas en la validacion
+	 * 	del String recibido.
+	 */
 	bool VALIDAR = true;
 	uint8 aux8 = 0;
 	uint16 aux16 = 0;
@@ -478,9 +491,16 @@ void RX(void){
 	uint16 RPMMAX = 0;
 	uint8 DUTY[4] = {0,0,0,0};
 	uint16 RPM[4] = {0,0,0,0};
-	pvar8 = &var8;
-	pvar8 = &serie.rx_buf[serie.rx_read];
-	if (serie.FLAG_RX && serie.HAB_RX) {	
+	/*
+	 * Verificar si se recibio un String y si esta habilitada la recepción
+	 */
+	if (serie.FLAG_RX && serie.HAB_RX) {
+		pvar8 = &var8;
+		pvar8 = &serie.rx_buf[serie.rx_read];	
+		/*
+		 * Realiza la DECODIFICACIÓN y VALIDACION de los
+		 * 	datos recibidos.
+		 */
 		if (*pvar8 == TXABIERTO){
 			pvar8++;
 			VALIDAR = (TEXT_ScanDecimal8uNumber((const unsigned char**)&pvar8,&aux8) != ERR_OK) ? false : VALIDAR;
@@ -604,37 +624,43 @@ void duty_remoto(void){
 	WATCHDOG = WATCHDOG | WD_ESTADO;
 	ESTADOANTERIOR = ESTADO;
 	if (cambio_estado) {
+		/*
+		 * Si hubo un cambio de estado reciente, se detecta
+		 * 	y setea los valores de DUTY a CERO
+		 */
 		motor_di.duty = DUTY_CERO;
 		motor_dd.duty = DUTY_CERO;
 		motor_ti.duty = DUTY_CERO;
 		motor_td.duty = DUTY_CERO;
 		cambio_estado = false;
 	}
+	/*
+	 * Toma lectura de las señales del control remoto en milisegundos
+	 */
 	Get_Remoto(&velocidad);
 	Get_Remoto(&direccion);
+	/*
+	 * Se limita el ancho máximo y mínimo de la señal leida,
+	 * 	tanto para velocidad como direccion.
+	 * Setea direccion a PaP.
+	 */
 	//LEER DIRECCION
-	direccion.ms =
-			(direccion.ms >= direccion.remoto_cero + REMOTO_ANCHO_PULSO) ?
-					direccion.remoto_cero + REMOTO_ANCHO_PULSO :
-					direccion.ms;
-	direccion.ms =
-			(direccion.ms <= direccion.remoto_cero - REMOTO_ANCHO_PULSO) ?
-					direccion.remoto_cero - REMOTO_ANCHO_PULSO :
-					direccion.ms;
-	pap.direccion_set = Mapeo(direccion.ms,
-			direccion.remoto_cero - REMOTO_ANCHO_PULSO,
-			direccion.remoto_cero + REMOTO_ANCHO_PULSO,
-			LIMITE_DIRECCION_IZQUIERDO, LIMITE_DIRECCION_DERECHO);
+	direccion.ms = (direccion.ms >= direccion.remoto_cero + REMOTO_ANCHO_PULSO) ? direccion.remoto_cero + REMOTO_ANCHO_PULSO : direccion.ms;
+	direccion.ms = (direccion.ms <= direccion.remoto_cero - REMOTO_ANCHO_PULSO) ? direccion.remoto_cero - REMOTO_ANCHO_PULSO : direccion.ms;
+	pap.direccion_set = Mapeo(direccion.ms, direccion.remoto_cero - REMOTO_ANCHO_PULSO, direccion.remoto_cero + REMOTO_ANCHO_PULSO,	LIMITE_DIRECCION_IZQUIERDO, LIMITE_DIRECCION_DERECHO);
 	//END LEER DIRECCION
 	//LEER VELOCIDAD
-	velocidad.ms =
-			(velocidad.ms >= velocidad.remoto_cero + REMOTO_ANCHO_PULSO) ?
-					velocidad.remoto_cero + REMOTO_ANCHO_PULSO :
-					velocidad.ms;
-	velocidad.ms =
-			(velocidad.ms <= velocidad.remoto_cero - REMOTO_ANCHO_PULSO) ?
-					velocidad.remoto_cero - REMOTO_ANCHO_PULSO :
-					velocidad.ms;
+	velocidad.ms = (velocidad.ms >= velocidad.remoto_cero + REMOTO_ANCHO_PULSO) ? velocidad.remoto_cero + REMOTO_ANCHO_PULSO : velocidad.ms;
+	velocidad.ms = (velocidad.ms <= velocidad.remoto_cero - REMOTO_ANCHO_PULSO) ? velocidad.remoto_cero - REMOTO_ANCHO_PULSO : velocidad.ms;
+	//END LEER VELOCIDAD
+	/*
+	 * Se detecta el sentido deseado de movimiento.
+	 * Si el estado actual de movimiento es distinto al deseado,
+	 * 	se setea la velocidad en cero hasta que sea posible cambiar
+	 * 	el sentido de avance.
+	 * La velocidad leida por el control remoto en milisegundos
+	 * 	es mapeada a DUTY
+	 */
 	//CAMBIO DE SENTIDO
 	if (velocidad.ms < (velocidad.remoto_cero - REMOTO_VENTANA)) {//ES REVERSA?
 		sentido_act = REVERSA;
@@ -658,14 +684,23 @@ void duty_remoto(void){
 				velocidad.remoto_cero - REMOTO_ANCHO_PULSO, DUTY_MIN,
 				duty_max_control);
 	}
+	/*
+	 * Limita el DUTY maximo.
+	 * El maximo lo establece el usuario
+	 */
 	DUTY_SET = (DUTY_SET <= duty_max_control) ? duty_max_control : DUTY_SET;
-	
 	//END CAMBIO DE SENTIDO
 	motor_di.duty = DUTY_SET;
 	motor_dd.duty = DUTY_SET;
 	motor_ti.duty = DUTY_SET;
 	motor_td.duty = DUTY_SET;
 	//PERDIDA DE SENAL - SALE DEL ESTADO
+	/*
+	 * Si no se recibe señal por parte del control remoto,
+	 * 	sea de velocidad o de direcion, o hubo un error en la calibracion
+	 * 	de la posicion CERO del control remoto
+	 * 	el ESTADO del programa detecta PERDIDA DE SEÑAL
+	 */
 	if (velocidad.perdida_senal_remoto >= REMOTO_PERDIDA_SENAL
 			|| direccion.perdida_senal_remoto >= REMOTO_PERDIDA_SENAL || velocidad.remoto_cero == 0 || direccion.remoto_cero == 0) {
 		velocidad.perdida_senal_remoto = 0;
@@ -675,9 +710,15 @@ void duty_remoto(void){
 	//END PERDIDA DE SENAL - SALE DEL ESTADO	
 }
 void rpm_remoto(void){
+	WATCHDOG = WATCHDOG | WD_ESTADO;
 	ESTADOANTERIOR = ESTADO;
 	if (cambio_estado) {
 		//RESET AL PASAR AL ESTADO RPM_REMOTO
+		/*
+		 * Si hubo un cambio de estado reciente, se detecta
+		 * 	y setea los valores de los PID, errores
+		 * 	y tensiones de control.
+		 */
 		cuenta_PID = 0;
 		Reset_PIDs(motor_di);
 		Reset_PIDs(motor_dd);
@@ -699,22 +740,21 @@ void rpm_remoto(void){
 		//END RESET
 	}
 	//LEER REMOTO
+	/*
+	 * Toma lectura de las señales del control remoto en milisegundos
+	 */
 	Get_Remoto(&velocidad);
 	Get_Remoto(&direccion);
+	/*
+	 * Se limita el ancho máximo y mínimo de la señal leida,
+	 * 	tanto para velocidad como direccion.
+	 * Setea direccion a PaP.
+	 */
 	//END LEER REMOTO
 	//LEER DIRECCION
-	direccion.ms =
-			(direccion.ms >= direccion.remoto_cero + REMOTO_ANCHO_PULSO) ?
-					direccion.remoto_cero + REMOTO_ANCHO_PULSO :
-					direccion.ms;
-	direccion.ms =
-			(direccion.ms <= direccion.remoto_cero - REMOTO_ANCHO_PULSO) ?
-					direccion.remoto_cero - REMOTO_ANCHO_PULSO :
-					direccion.ms;
-	pap.direccion_set = Mapeo(direccion.ms,
-			direccion.remoto_cero - REMOTO_ANCHO_PULSO,
-			direccion.remoto_cero + REMOTO_ANCHO_PULSO,
-			LIMITE_DIRECCION_IZQUIERDO, LIMITE_DIRECCION_DERECHO);
+	direccion.ms = (direccion.ms >= direccion.remoto_cero + REMOTO_ANCHO_PULSO) ? direccion.remoto_cero + REMOTO_ANCHO_PULSO : direccion.ms;
+	direccion.ms = (direccion.ms <= direccion.remoto_cero - REMOTO_ANCHO_PULSO) ? direccion.remoto_cero - REMOTO_ANCHO_PULSO : direccion.ms;
+	pap.direccion_set = Mapeo(direccion.ms, direccion.remoto_cero - REMOTO_ANCHO_PULSO, direccion.remoto_cero + REMOTO_ANCHO_PULSO,	LIMITE_DIRECCION_IZQUIERDO, LIMITE_DIRECCION_DERECHO);
 	//END LEER DIRECCION
 	//LEER VELOCIDAD
 	velocidad.ms =
@@ -726,6 +766,14 @@ void rpm_remoto(void){
 					velocidad.remoto_cero - REMOTO_ANCHO_PULSO :
 					velocidad.ms;
 	//END LEER VELOCIDAD
+	/*
+	 * Se detecta el sentido deseado de movimiento.
+	 * Si el estado actual de movimiento es distinto al deseado,
+	 * 	se setea la velocidad en cero hasta que sea posible cambiar
+	 * 	el sentido de avance.
+	 * La velocidad leida por el control remoto en milisegundos
+	 * 	es mapeada a RPM
+	 */
 	//CAMBIO DE SENTIDO
 	if (velocidad.ms < (velocidad.remoto_cero - REMOTO_VENTANA)) {//ES REVERSA?
 		sentido_act = REVERSA;
@@ -759,17 +807,21 @@ void rpm_remoto(void){
 		}
 	}
 	if (sentido_act == ADELANTE) {
-		RPM_SET = Mapeo(velocidad.ms, velocidad.remoto_cero,
-				velocidad.remoto_cero + REMOTO_ANCHO_PULSO, SET_RPM_MIN,
-				rpm_max_control);
+		RPM_SET = Mapeo(velocidad.ms, velocidad.remoto_cero, velocidad.remoto_cero + REMOTO_ANCHO_PULSO, SET_RPM_MIN, rpm_max_control);
 	} else {
-		RPM_SET = Mapeo(velocidad.ms, velocidad.remoto_cero,
-				velocidad.remoto_cero - REMOTO_ANCHO_PULSO, SET_RPM_MIN,
-				rpm_max_control);
+		RPM_SET = Mapeo(velocidad.ms, velocidad.remoto_cero, velocidad.remoto_cero - REMOTO_ANCHO_PULSO, SET_RPM_MIN, rpm_max_control);
 	}
 	RPM_SET = (RPM_SET > rpm_max_control) ? rpm_max_control : RPM_SET;
 	//END CAMBIO DE SENTIDO
 	//CONTROL PID
+	/*
+	 * Actua el control PI de cada uno de los motores
+	 * 	cada un periodo de "MUESTRO_PID" milisegundo.
+	 * Si el setpoint de RPM es CERO, el sistema elude
+	 * 	el control y setea las variables controladas y las tensiones
+	 * 	aplicadas de los drivers a cero.
+	 * 	
+	 */
 	if (cuenta_PID >= MUESTREO_PID) { //100 milisegundos periodo de muestreo
 		WATCHDOG = WATCHDOG | WD_ESTADO;
 		cuenta_PID -= MUESTREO_PID;
@@ -811,14 +863,16 @@ void rpm_remoto(void){
 	}
 	//END CONTROL PID
 	//TENSION A PONER EN MOTORES
+	/*
+	 * Adaptación de DUTY a Tension de Control equivalente
+	 */
 	Tension2Duty(&motor_di);
 	Tension2Duty(&motor_dd);
 	Tension2Duty(&motor_td);
 	Tension2Duty(&motor_ti);
 	//END TENSION A PONER EN MOTORES
 	//PERDIDA DE SENAL - SALE DEL ESTADO
-	if (velocidad.perdida_senal_remoto >= REMOTO_PERDIDA_SENAL
-			|| direccion.perdida_senal_remoto >= REMOTO_PERDIDA_SENAL || velocidad.remoto_cero == 0 || direccion.remoto_cero == 0) {
+	if (velocidad.perdida_senal_remoto >= REMOTO_PERDIDA_SENAL || direccion.perdida_senal_remoto >= REMOTO_PERDIDA_SENAL || velocidad.remoto_cero == 0 || direccion.remoto_cero == 0) {
 		velocidad.perdida_senal_remoto = 0;
 		velocidad.ms = 0;
 		velocidad.cuenta_remoto = 0;
@@ -842,10 +896,16 @@ void duty_pc(void){
 		cambio_estado = false;
 	}
 	//LECTURA PC
+	/*
+	 * Se comprueban los limites de los valores ingresados por PC.
+	 * Si el estado actual de movimiento es distinto al deseado,
+	 * 	se setea la velocidad en cero hasta que sea posible cambiar
+	 * 	el sentido de avance.
+	 * Se setea el DUTY de los PWM correspondientes a cada driver
+	 */
 	pc.direccion = (pc.direccion >= PC_LD) ? PC_LD : pc.direccion;
 	pc.direccion = (pc.direccion <= PC_LI) ? PC_LI : pc.direccion;
-	pap.direccion_set = Mapeo(pc.direccion, PC_LI, PC_LD,
-			LIMITE_DIRECCION_IZQUIERDO, LIMITE_DIRECCION_DERECHO);
+	pap.direccion_set = Mapeo(pc.direccion, PC_LI, PC_LD, LIMITE_DIRECCION_IZQUIERDO, LIMITE_DIRECCION_DERECHO);
 	pc.reversa = (pc.reversa >= REVERSA) ? REVERSA : pc.reversa;
 	sentido_act = pc.reversa;
 	
@@ -859,17 +919,11 @@ void duty_pc(void){
 		if (Vel_Cero(motor_di, motor_dd, motor_td, motor_ti)) {
 			sentido_ant = sentido_act;
 			Out_Reversa_PutVal(sentido_act);
-			motor_dd.duty = DUTY_CERO;
-			motor_di.duty = DUTY_CERO;
-			motor_td.duty = DUTY_CERO;
-			motor_ti.duty = DUTY_CERO;
-			//-
-		} else {
-			motor_dd.duty = DUTY_CERO;
-			motor_di.duty = DUTY_CERO;
-			motor_td.duty = DUTY_CERO;
-			motor_ti.duty = DUTY_CERO;
 		}
+		motor_dd.duty = DUTY_CERO;
+		motor_di.duty = DUTY_CERO;
+		motor_td.duty = DUTY_CERO;
+		motor_ti.duty = DUTY_CERO;
 	}
 	//END CAMBIO DE SENTIDO	
 }
@@ -877,6 +931,11 @@ void rpm_pc(void){
 	ESTADOANTERIOR = ESTADO;
 	if (cambio_estado) {
 		//RESET AL PASAR AL ESTADO RPM_REMOTO
+		/*
+		 * Si hubo un cambio de estado reciente, se detecta
+		 * 	y setea los valores de los PID, errores
+		 * 	y tensiones de control.
+		 */
 		cuenta_PID = 0;
 		Reset_PIDs(motor_di);
 		Reset_PIDs(motor_dd);
@@ -898,10 +957,15 @@ void rpm_pc(void){
 		//END RESET
 	}
 	//LECTURA PC
+	/*
+	 * Se comprueban los limites de los valores ingresados por PC.
+	 * Si el estado actual de movimiento es distinto al deseado,
+	 * 	se setea el setpoint de RPM en cero hasta que sea posible cambiar
+	 * 	el sentido de avance.
+	 */
 	pc.direccion = (pc.direccion >= PC_LD) ? PC_LD : pc.direccion;
 	pc.direccion = (pc.direccion <= PC_LI) ? PC_LI : pc.direccion;
-	pap.direccion_set = Mapeo(pc.direccion, PC_LI, PC_LD,
-			LIMITE_DIRECCION_IZQUIERDO, LIMITE_DIRECCION_DERECHO);
+	pap.direccion_set = Mapeo(pc.direccion, PC_LI, PC_LD,LIMITE_DIRECCION_IZQUIERDO, LIMITE_DIRECCION_DERECHO);
 	pc.reversa = (pc.reversa >= REVERSA) ? REVERSA : pc.reversa;
 	sentido_act = pc.reversa;					
 	//END LECTURA PC
@@ -910,37 +974,35 @@ void rpm_pc(void){
 		if (Vel_Cero(motor_di, motor_dd, motor_td, motor_ti)) {
 			sentido_ant = sentido_act;
 			Out_Reversa_PutVal(sentido_act);
-			cuenta_PID = 0;
-			Reset_PIDs(motor_di);
-			Reset_PIDs(motor_dd);
-			Reset_PIDs(motor_ti);
-			Reset_PIDs(motor_td);
-			motor_dd.error_RPM = 0;
-			motor_di.error_RPM = 0;
-			motor_ti.error_RPM = 0;
-			motor_td.error_RPM = 0;
-			motor_dd.control = 0;
-			motor_di.control = 0;
-			motor_td.control = 0;
-			motor_ti.control = 0;
-			motor_dd.tension = motor_dd.control;
-			motor_di.tension = motor_di.control;
-			motor_td.tension = motor_td.control;
-			motor_ti.tension = motor_ti.control;
-			//-
-		} else {
-			motor_dd.control = 0;
-			motor_di.control = 0;
-			motor_td.control = 0;
-			motor_ti.control = 0;
-			motor_dd.tension = motor_dd.control;
-			motor_di.tension = motor_di.control;
-			motor_td.tension = motor_td.control;
-			motor_ti.tension = motor_ti.control;
 		}
+		cuenta_PID = 0;
+		Reset_PIDs(motor_di);
+		Reset_PIDs(motor_dd);
+		Reset_PIDs(motor_ti);
+		Reset_PIDs(motor_td);
+		motor_dd.error_RPM = 0;
+		motor_di.error_RPM = 0;
+		motor_ti.error_RPM = 0;
+		motor_td.error_RPM = 0;
+		motor_dd.control = 0;
+		motor_di.control = 0;
+		motor_td.control = 0;
+		motor_ti.control = 0;
+		motor_dd.tension = motor_dd.control;
+		motor_di.tension = motor_di.control;
+		motor_td.tension = motor_td.control;
+		motor_ti.tension = motor_ti.control;
 	}
 	//END CAMBIO DE SENTIDO
 	//CONTROL PID
+	/*
+	 * Actua el control PI de cada uno de los motores por separado
+	 * 	cada un periodo de "MUESTRO_PID" milisegundo.
+	 * Si el setpoint de RPM es CERO, el sistema elude
+	 * 	el control y setea las variables controladas y las tensiones
+	 * 	aplicadas de los drivers a cero.
+	 * 	
+	 */
 	if (cuenta_PID >= MUESTREO_PID) { //100 milisegundos periodo de muestreo
 		WATCHDOG = WATCHDOG | WD_ESTADO;
 		cuenta_PID -= MUESTREO_PID;
@@ -999,6 +1061,13 @@ void rpm_pc(void){
 	
 }
 void perdida_senal(void){
+	/*
+	 * En caso de perder la señal del control remoto
+	 * 	se pasa automaticamente a este estado y se
+	 * 	resetean todos los valores de CALIBRACION,
+	 * 	datos del PI, setpoint de velocidad y
+	 * 	Tensiones en los drivers.
+	 */
 	WATCHDOG = WATCHDOG | WD_ESTADO;
 	ESTADO = CALIBRACION;
 	cambio_estado = true;
@@ -1032,6 +1101,15 @@ void calibracion(void){
 	WATCHDOG = WATCHDOG | WD_ESTADO;
 	Get_Remoto(&velocidad);
 	Get_Remoto(&direccion);
+	/*
+	 * Toma lectura del control remoto y verifica que se este leyendo un valor
+	 * 	distinto de CERO o bien si se llego al estado CALIBRACION por un
+	 * 	cambio de estado.
+	 * 
+	 * Reliza varias lecturas de velocidad y direcion, si las mismas son iguales
+	 * 	una cantidad de veces preestablecida, define ese valor como el de calibracion
+	 * 	del CERO, tanto de velocidad como de direccion y vuelve al ESTADO ANTERIOR.
+	 */
 	if (velocidad.ms != 0 || direccion.ms != 0 || !cambio_estado) {
 		if (velocidad.ms == velocidad.remoto_cero) {
 			velocidad.cuenta_remoto++;
@@ -1045,16 +1123,13 @@ void calibracion(void){
 			direccion.remoto_cero = direccion.ms;
 			direccion.cuenta_remoto = 0;
 		}
-		if (velocidad.cuenta_remoto >= CUENTAS_REMOTO
-				&& direccion.cuenta_remoto >= CUENTAS_REMOTO) {
+		if (velocidad.cuenta_remoto >= CUENTAS_REMOTO && direccion.cuenta_remoto >= CUENTAS_REMOTO) {
 			velocidad.cuenta_remoto = 0;
 			direccion.cuenta_remoto = 0;
 			ESTADO = (ESTADOANTERIOR == CALIBRACION) ? RPM_REMOTO : ESTADOANTERIOR;
 			cambio_estado = true;
 		}
-		if (velocidad.perdida_senal_remoto >= REMOTO_PERDIDA_SENAL
-				|| direccion.perdida_senal_remoto
-						>= REMOTO_PERDIDA_SENAL || velocidad.remoto_cero == 0 || direccion.remoto_cero == 0) {
+		if (velocidad.perdida_senal_remoto >= REMOTO_PERDIDA_SENAL || direccion.perdida_senal_remoto >= REMOTO_PERDIDA_SENAL || velocidad.remoto_cero == 0 || direccion.remoto_cero == 0) {
 			velocidad.perdida_senal_remoto = 0;
 			velocidad.cuenta_remoto = 0;
 			direccion.perdida_senal_remoto = 0;
@@ -1064,8 +1139,20 @@ void calibracion(void){
 }
 void set_direccion(void){
 	//HABILITO DIRECCION
+	/*
+	 * Verificar una correcta lectura de 
+	 * 	habilitación
+	 */
 	pc.pap_ha = (pc.pap_ha >= 1) ? 1 : pc.pap_ha;
 	pc.pap_en = (pc.pap_en >= 1) ? 1 : pc.pap_en;
+	//END HABILITO DIRECCION
+	//DESHABILITAR ENABLE
+	/*
+	 * Si la velocidad de lectura es cero y 
+	 * 	el setpoint de direccion es igual a la
+	 * 	lectura de direccion se deshabilita el
+	 * 	driver del PaP
+	 */
 	if (Vel_Cero(motor_di, motor_dd, motor_td, motor_ti)
 			&& (pap.direccion_set == pap.direccion_lectura)) {
 		pap.FLAG_EN = false;
@@ -1074,27 +1161,36 @@ void set_direccion(void){
 		pap.FLAG_EN = true;
 		pap.FLAG_HABILITADO = true;
 	}
-	//END HABILITO DIRECCION		
+	//END DESHABILITAR ENABLE
+	//END HABILITO DIRECCION
+	/*
+	 * Habilita o Deshabilita el DRIVER del PaP
+	 * 	permitiendo a este estar habilitado, manteniendo
+	 * 	de esta manera el motor bloqueado o directamente
+	 * 	deshabilitarlo por completo 
+	 */
 	if (pap.FLAG_EN && pc.pap_en) {
 		DIRECCION_ON;
 	} else {
 		DIRECCION_OFF;
 	}
+	/*
+	 * Habilita o Desahibilita el CONTROL de PaP
+	 * 	Si se encuentra habilitado, realiza el control
+	 * 	de la direccion.
+	 * 	De no estarlo, queda deshabilitado el control
+	 * 	permitiendo solamente controlar el bloqueo (retencion)
+	 * 	o desbloqueo del driver
+	 */
 	if (pap.FLAG_HABILITADO && pc.pap_ha) {
 		pap.FLAG_HABILITADO = false;
-		pap.direccion_set =
-				(pap.direccion_set >= LIMITE_DIRECCION_DERECHO) ?
-						LIMITE_DIRECCION_DERECHO : pap.direccion_set;
-		pap.direccion_set =
-				(pap.direccion_set <= LIMITE_DIRECCION_IZQUIERDO) ?
-						LIMITE_DIRECCION_IZQUIERDO : pap.direccion_set;
-		if (pap.direccion_set
-				> (pap.direccion_lectura + VENTANA_DIRECCION)) {
+		pap.direccion_set = (pap.direccion_set >= LIMITE_DIRECCION_DERECHO) ? LIMITE_DIRECCION_DERECHO : pap.direccion_set;
+		pap.direccion_set =	(pap.direccion_set <= LIMITE_DIRECCION_IZQUIERDO) ?	LIMITE_DIRECCION_IZQUIERDO : pap.direccion_set;
+		if (pap.direccion_set > (pap.direccion_lectura + VENTANA_DIRECCION)) {
 			pap.FLAG_SENTIDO = DERECHA;
 			pap.FLAG_DIRECCION = true;
 		}
-		if (pap.direccion_set
-				< (pap.direccion_lectura - VENTANA_DIRECCION)) {
+		if (pap.direccion_set < (pap.direccion_lectura - VENTANA_DIRECCION)) {
 			pap.FLAG_SENTIDO = IZQUIERDA;
 			pap.FLAG_DIRECCION = true;
 		}
@@ -1104,9 +1200,7 @@ void set_direccion(void){
 			DIRECCION_ANTI;
 		}
 	}
-	if ((pap.direccion_set <= (pap.direccion_lectura + VENTANA_DIRECCION))
-			&& (pap.direccion_set
-					>= (pap.direccion_lectura - VENTANA_DIRECCION))) {
+	if ((pap.direccion_set <= (pap.direccion_lectura + VENTANA_DIRECCION)) && (pap.direccion_set >= (pap.direccion_lectura - VENTANA_DIRECCION))) {
 		pap.FLAG_DIRECCION = false;
 		pap.pwm_direccion = 0;
 	}	
@@ -1133,7 +1227,7 @@ void pulsador(void){
 void led_aux(void){
 	if (cuenta_RX >= 500) {
 		cuenta_RX -= 500;
-		//FLAG_TX = true;		  
+		//FLAG_TX = true;
 	}
 	if (cnt_aux >= 100 && ESTADO == CALIBRACION) {
 		cnt_aux -= 100;

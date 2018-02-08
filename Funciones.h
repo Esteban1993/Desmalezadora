@@ -11,13 +11,13 @@
 #include "Struct2.h"
 #include "Defines2.h"
 #include "PE_Types.h"
-#include "Encoder_DD.h"
+#include "Hall_DD.h"
 #include "BitIoLdd16.h"
-#include "Encoder_DI.h"
+#include "Hall_DI.h"
 #include "BitIoLdd17.h"
-#include "Encoder_TD.h"
+#include "Hall_TD.h"
 #include "BitIoLdd18.h"
-#include "Encoder_TI.h"
+#include "Hall_TI.h"
 #include "BitIoLdd19.h"
 /*
  * ######################## FUNCIONES ###############################
