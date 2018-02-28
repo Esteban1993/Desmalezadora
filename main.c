@@ -13,17 +13,6 @@
  **         No public methods
  **
  ** ###################################################################*/
-/*!
- ** @file main.c
- ** @version 01.01
- ** @brief
- **         Main module.
- **         This module contains user's application code.
- */
-/*!
- **  @addtogroup main_module main module documentation
- **  @{
- */
 /* MODULE main */
 
 /* Including needed modules to compile this module/procedure */
@@ -354,10 +343,23 @@ void GetCorriente(void) {
 		ADC_I_GetChanValue16(MOTOR_TD,&motor_td.adc);
 		ADC_I_GetChanValue16(MOTOR_TI,&motor_ti.adc);
 		ADC_I_Measure(FALSE);
+		/*
+		 * Con la finalidad de no perder precision en los calculos,
+		 * 	se envian los valores de corriente en formato binario
+		 * 	de 16 bit, con los datos provenientes del ADC
+		 */
+		/*
+		 * Mapeo realizado anteriormente a valores de tensión
 		motor_di.i = Mapeo(motor_di.adc,MIN16BIT,MAX16BIT,V0,V33);
 		motor_dd.i = Mapeo(motor_dd.adc,MIN16BIT,MAX16BIT,V0,V33);
 		motor_td.i = Mapeo(motor_td.adc,MIN16BIT,MAX16BIT,V0,V33);
 		motor_ti.i = Mapeo(motor_ti.adc,MIN16BIT,MAX16BIT,V0,V33);
+		*/
+		motor_di.i = motor_di.adc;
+		motor_dd.i = motor_dd.adc;
+		motor_td.i = motor_td.adc;
+		motor_ti.i = motor_ti.adc;
+		
 	}
 	WATCHDOG = WATCHDOG | WD_CORRIENTE;
 }
@@ -444,6 +446,10 @@ void TX(SERIE *serie_x) {
 		TEXT_strcatNum8s(serie.tx_buf, sizeof(serie.tx_buf),(byte)Mapeo(pap.direccion_lectura,LIMITE_DIRECCION_IZQUIERDO,LIMITE_DIRECCION_DERECHO,PC_LI,PC_LD));
 		TEXT_chcat(serie.tx_buf, sizeof(serie.tx_buf), TXSEPARADOR);
 		TEXT_strcatNum8u(serie.tx_buf, sizeof(serie.tx_buf),(word)sentido_act);
+		//BORRAR
+		TEXT_chcat(serie.tx_buf, sizeof(serie.tx_buf), TXSEPARADOR);
+		TEXT_strcatNum16u(serie.tx_buf, sizeof(serie.tx_buf),(word)motor_dd.tension);
+		//BORRAR
 		TEXT_chcat(serie.tx_buf, sizeof(serie.tx_buf), TXCERRADO);
 		TEXT_chcat(serie.tx_buf, sizeof(serie.tx_buf), '\r');
 		TEXT_chcat(serie.tx_buf, sizeof(serie.tx_buf), '\n');
